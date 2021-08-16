@@ -1,3 +1,12 @@
 [submodule "vendor/workflow"]
 	path = vendor/workflow
 	url = https://github.com/sogou/workflow.git
+[submodule "vendor/gstreamer"]
+	path = vendor/gstreamer
+	url = https://github.com/GStreamer/gstreamer.git
+[submodule "vendor/gflags"]
+	path = vendor/gflags
+	url = https://github.com/gflags/gflags.git
+[submodule "vendor/glog"]
+	path = vendor/glog
+	url = https://github.com/google/glog.git
