@@ -1,26 +1,39 @@
 // author: zlz
+#pragma once
+#include <string>
+#include <vector>
+#include "gstpp/element.h"
 
-#include "gstpp/element"
+#include <gst/gst.h>
 
 namespace grd {
 namespace gstpp {
 
-class GstPipeLine {
+class GstppBus;
+
+class GstppPipeline: public GstppElement {
   public:
-  PipeLine();
-  ~PipeLine();
+  GstppPipeline(const std::string& name);
+  virtual ~GstppPipeline();
 
-  bool Init();
-  void Destroy();
+  const std::string& name() const { return name_; }
+  GstppBus* bus() { return bus_; }
 
-  bool AddSource(const GstSource* source);
-  bool AddSink(const GstSink* sink);
+  GstppPipeline& Add(GstppElement* element);
 
-  private:
-
+private:
   GstElement* pipeline_ = nullptr;
-  std::set<GstElement*> elements_;
+
+  GstppBus* bus_;
+
+  std::set<GstppElement*> elements_;
+
+  friend std::ostream& operator<<(std::ostream&, GstppPipeline&);
 };
 
+std::ostream& operator<<(std::ostream& os, GstppPipeline& elem) {
+  os << "(" << elem.type() << ":" << elem.name() << ")";
+  return os;
+}
 }
 }
