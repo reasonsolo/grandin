@@ -12,11 +12,19 @@ GstppElement::GstppElement(const std::string& ele_type,
   CHECK (element_) << "cannot make gst element " << ele_type << "," << ele_name;
 }
 
+GstppElement::GstppElement(const std::string& ele_type,
+                           const std::string& ele_name,
+                           GstElement* elem_ptr):
+                           type_(ele_type), name_(ele_name), element_(elem_ptr) {
+  // CHECK (element_) << "invalid gst element " << ele_type << "," << ele_name;
+}
+
 GstppElement::~GstppElement() {
-  if (!added_to_pipeline_ && element_) {
+  if (!pipeline_ && element_) {
     gst_object_unref(GST_OBJECT(element_));
   }
 }
+
 
 void GstppElement::LinkTo(GstppElement& downstream) {
   CHECK(gst_element_link(element(), downstream.element_))
@@ -29,6 +37,20 @@ bool GstppElement::SetState(ElementState state) {
     return true;
   }
   return false;
+}
+
+std::ostream& operator<<(std::ostream& os, GstppElement& elem) {
+  os << "(" << elem.type() << ":" << elem.name() << ")";
+  return os;
+}
+
+/* static */
+GstppElement* Create(const std::string& type, const std::string& name) {
+  auto elem = gst_element_factory_make(type.c_str(), name.c_str());
+  if (elem) {
+    return new GstppElement(type, name, elem);
+  }
+  return nullptr;
 }
 
 }

@@ -1,7 +1,7 @@
 // author: zlz
 #pragma once
 #include <string>
-#include <vector>
+#include <set>
 #include "gstpp/element.h"
 
 #include <gst/gst.h>
@@ -14,17 +14,20 @@ class GstppBus;
 class GstppPipeline: public GstppElement {
   public:
   GstppPipeline(const std::string& name);
+  GstppPipeline(const std::string& name, GstElement* p);
   virtual ~GstppPipeline();
 
   const std::string& name() const { return name_; }
   GstppBus* bus() { return bus_; }
+  GstElement* element() override { return p_; }
 
   GstppPipeline& Add(GstppElement* element);
 
-private:
-  GstElement* pipeline_ = nullptr;
+  static GstppPipeline* LaunchFrom(const std::string& name, const std::string& cmd);
 
-  GstppBus* bus_;
+private:
+  GstElement* p_ = nullptr;
+  GstppBus* bus_ = nullptr;
 
   std::set<GstppElement*> elements_;
 

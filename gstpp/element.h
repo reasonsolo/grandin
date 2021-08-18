@@ -19,12 +19,12 @@ enum class ElementState {
   PAUSED = GST_STATE_PAUSED,
 };
 
-  class GstppPipeline;
 class GstppElement {
   NOCOPY(GstppElement);
  public:
   GstppElement() = default;
   GstppElement(const std::string& ele_type, const std::string& ele_name);
+  GstppElement(const std::string& ele_type, const std::string& ele_name, GstElement* elem_ptr);
   virtual ~GstppElement();
 
   const std::string& name() const { return name_; }
@@ -46,8 +46,11 @@ class GstppElement {
     return rhs;
   }
 
+  static GstppElement* Create(const std::string& type, const std::string& name);
+
  protected:
   
+  void AddToPipeline(GstppElement* p) { pipeline_ = p; }
   virtual GstElement* element() { return element_; }
 
   bool SetState(ElementState state);
@@ -57,17 +60,14 @@ class GstppElement {
 
   GstElement* element_ = nullptr;
   ElementState state_ = ElementState::RESET;
-  GstppPipeline* pipeline_ = nullptr;
+  GstppElement* pipeline_ = nullptr;
 
   friend std::ostream& operator<<(std::ostream&, GstppElement&);
   friend class GstppPipeline;
 
 };
 
-std::ostream& operator<<(std::ostream& os, GstppElement& elem) {
-  os << "(" << elem.type() << ":" << elem.name() << ")";
-  return os;
-}
+std::ostream& operator<<(std::ostream& os, GstppElement& elem);
 
 }  // namespace gstpp
 }  // namespace grd
