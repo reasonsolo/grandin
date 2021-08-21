@@ -29,8 +29,9 @@ class GstppElement {
 
   const std::string& name() const { return name_; }
   const std::string& type() const { return type_; }
-
+  virtual GstElement* element() const { return element_; }
   ElementState state() const { return state_; }
+  virtual GstppBus* bus() const { return bus_; }
 
   void LinkTo(GstppElement& downstream);
 
@@ -46,13 +47,17 @@ class GstppElement {
     return rhs;
   }
 
+  void SetFlag(gint flag);
+  void UnSetFlag(gint flag);
+  void SetProperty(const std::string& key, const std::string& value);
+
   static GstppElement* Create(const std::string& type, const std::string& name);
 
  protected:
   
   void AddToPipeline(GstppElement* p) { pipeline_ = p; }
-  virtual GstElement* element() { return element_; }
 
+  void InitBus(GstBus* bus);
   bool SetState(ElementState state);
 
   std::string type_;
@@ -61,6 +66,7 @@ class GstppElement {
   GstElement* element_ = nullptr;
   ElementState state_ = ElementState::RESET;
   GstppElement* pipeline_ = nullptr;
+  GstppBus* bus_ = nullptr;
 
   friend std::ostream& operator<<(std::ostream&, GstppElement&);
   friend class GstppPipeline;

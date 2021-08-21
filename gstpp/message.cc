@@ -6,7 +6,7 @@ namespace grd {
 namespace gstpp {
 
 GstppMessage::GstppMessage(GstMessage* msg)
-    : msg_(msg), type_(static_cast<GstppMessageType>(GST_MESSAGE_TYPE(msg))) {
+    : msg_(msg), type_(static_cast<MessageType>(GST_MESSAGE_TYPE(msg))) {
     
 }
 

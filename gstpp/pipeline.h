@@ -17,9 +17,8 @@ class GstppPipeline: public GstppElement {
   GstppPipeline(const std::string& name, GstElement* p);
   virtual ~GstppPipeline();
 
-  const std::string& name() const { return name_; }
-  GstppBus* bus() { return bus_; }
-  GstElement* element() override { return p_; }
+  GstppBus* bus() const override { return bus_; }
+  GstElement* element() const override { return p_; }
 
   GstppPipeline& Add(GstppElement* element);
 
@@ -34,9 +33,6 @@ private:
   friend std::ostream& operator<<(std::ostream&, GstppPipeline&);
 };
 
-std::ostream& operator<<(std::ostream& os, GstppPipeline& elem) {
-  os << "(" << elem.type() << ":" << elem.name() << ")";
-  return os;
-}
+std::ostream& operator<<(std::ostream& os, GstppPipeline& elem);
 }
 }

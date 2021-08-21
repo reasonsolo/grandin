@@ -56,5 +56,10 @@ GstppPipeline* GstppPipeline::LaunchFrom(const std::string& name,
   return nullptr;
 }
 
+std::ostream& operator<<(std::ostream& os, GstppPipeline& elem) {
+  os << "(" << elem.type() << ":" << elem.name() << ")";
+  return os;
+}
+
 }  // namespace gstpp
 }  // namespace grd

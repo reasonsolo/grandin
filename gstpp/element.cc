@@ -20,6 +20,9 @@ GstppElement::GstppElement(const std::string& ele_type,
 }
 
 GstppElement::~GstppElement() {
+  if (bus_) {
+    delete bus_;
+  }
   if (!pipeline_ && element_) {
     gst_object_unref(GST_OBJECT(element_));
   }
@@ -53,5 +56,27 @@ GstppElement* Create(const std::string& type, const std::string& name) {
   return nullptr;
 }
 
+void GstppElement::SetProperty(const std::string& key, const std::string& value) {
+  g_object_set(gpointer(element()), key.c_str(), value.c_str(), nullptr);
+}
+
+void GstppElement::SetFlag(gint flag) {
+    gint query_flags;
+    g_object_get(element(), "flags", &query_flags, nullptr);
+    gint flags = query_flags | flag;
+    g_object_set(element(), "flags", flags, nullptr);
+}
+
+void GstppElement::UnSetFlag(gint flag) {
+    gint query_flags;
+    g_object_get(element(), "flags", &query_flags, nullptr);
+    gint flags = query_flags & ~flag;
+    g_object_set(element(), "flags", flags, nullptr);
+}
+
+void GstppElement::InitBus(GstBus* bus) {
+  CHECK(!bus_);
+  bus_ = new GstppBus(bus);
+}
 }
 }

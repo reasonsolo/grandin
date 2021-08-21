@@ -14,7 +14,7 @@ namespace grd {
 namespace gstpp {
 
 class GstppBus;
-using GstppMsgCallback = std::function<void(GstppBus*, GstppMessage*)>;
+using GstppBusCallback = std::function<void(GstppBus*, GstppMessage*)>;
 
 class GstppBus {
   public:
@@ -28,19 +28,18 @@ class GstppBus {
     void WatchAndSignalConnect() {
       CHECK(bus_) << "bus is invalid";
       gst_bus_add_signal_watch(bus_);
-      g_signal_connect(bus_, "message", G_CALLBACK(&GstppBus::message_cb), this);
+      g_signal_connect(bus_, "message", G_CALLBACK(&GstppBus::MessageCallback), this);
     }
 
-    void SetMessageCallback(GstppMsgCallback cb) {
-      msg_cb_ = cb;
+    void AddMessageCallback(GstppBusCallback cb) {
+      CHECK(cb);
+      msg_cbs_.push_back(std::move(cb));
     }
 
-    static void message_cb(GstBus* bus, GstMessage* msg, GstppBus* self) {
-      if (self->msg_cb_) {
-        GstppMessage gstpp_msg(msg);
-        self->msg_cb_(self, &gstpp_msg);
-      } else {
-        LOG(WARNING) << "bus message callback is not set";
+    static void MessageCallback(GstBus* bus, GstMessage* msg, GstppBus* self) {
+      GstppMessage gstpp_msg(msg);
+      for (auto&& cb : self->msg_cbs_) {
+        cb(self, &gstpp_msg);
       }
     }
 
@@ -49,7 +48,7 @@ class GstppBus {
   private:
 
     GstBus* bus_ = nullptr;
-    GstppMsgCallback msg_cb_;
+    std::vector<GstppBusCallback> msg_cbs_;
 };
 
 

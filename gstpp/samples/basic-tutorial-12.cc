@@ -10,28 +10,28 @@ int main() {
   gst_init(nullptr, nullptr);
   auto pipeline = GstppPipeline::LaunchFrom(
       "playbin "
-      "uri=https://www.freedesktop.org/software/gstreamer-sdk/data/media/"
-      "sintel_trailer-480p.webm",
+      "uri=https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm",
       "pipeline");
   CHECK(pipeline);
   auto bus = pipeline->bus();
   auto main_loop = new GstppMainLoop();
 
-  pipeline->Play();
+  //pipeline->Play();
 
-  bus->SetMessageCallback([&pipeline, &main_loop](GstppBus* bus, GstppMessage* msg) {
+  bus->AddMessageCallback([&pipeline, &main_loop](GstppBus* bus, GstppMessage* msg) {
+    LOG(INFO) << "get message " << GST_MESSAGE_TYPE_NAME(msg->msg());
     switch (msg->type()) {
-      case GstppMessageType::ERROR: {
+      case MessageType::ERROR: {
         LOG(ERROR) << "err msg: " << msg->AsError();
         break;
       }
-      case GstppMessageType::EOS: {
+      case MessageType::EOS: {
         LOG(INFO) << "EOS, stop loop";
         pipeline->Reset();
         main_loop->Quit();
         break;
       }
-      case GstppMessageType::BUFFERING: {
+      case MessageType::BUFFERING: {
         int32_t percent = msg->AsBufferingPercent();
         LOG(INFO) << "buffering " << percent << "%";
         if (percent < 100) {
@@ -41,7 +41,7 @@ int main() {
         }
         break;
       }
-      case GstppMessageType::CLOCK_LOST: {
+      case MessageType::CLOCK_LOST: {
         pipeline->Pause();
         pipeline->Play();
         break;
