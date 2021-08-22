@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "gstpp/element.h"
-#include "gstpp/main_loop.h";
+#include "gstpp/main_loop.h"
 #include "gstpp/gtk_player.h"
 #include "gstpp/pad.h"
 
@@ -15,12 +15,22 @@
 
 using namespace grd::gstpp;
 
-DEFINE_string(src, "/opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4", "input stream");
-DEFINE_string(pgie, "dstest1_pgie_config.txt", "pgie config file");
+DEFINE_string(
+    src,
+    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4",
+    "input stream");
+DEFINE_string(pgie,
+              "/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/"
+              "deepstream-test1/dstest1_pgie_config.txt",
+              "pgie config file");
 DEFINE_int32(width, 640, "width");
 DEFINE_int32(height, 480, "height");
 
-gchar pgie_classes_str[4][32] = {"Vehicle", "TwoWheeler", "Person", "Roadsign"};
+const int32_t MAX_DISPLAY_LEN = 64;
+const int32_t PGIE_CLASS_ID_VEHICLE = 0;
+const int32_t PGIE_CLASS_ID_PERSON = 0;
+const gchar PGIE_CLASSES_STR[4][32] = {"Vehicle", "TwoWheeler", "Person", "Roadsign"};
+char FONT_NAME[] = "Serif";
 
 GstPadProbeReturn OsdSinkPadBufferProbe(GstppPad* pad, GstPadProbeInfo* info, int32_t* frame_number);
 
@@ -66,20 +76,20 @@ int main(int argc, char** argv) {
       loop.Quit();
   });
 
-  GstppPad osd_sink_pad(nvosd, "sink");
+  GstppPad osd_sink_pad(&nvosd, "sink");
 
-  int32_t frame_numer = 0;
-  osd_sink_pad.AddProbeCallback(PadProbeType::BUFFER, [&frame_nubmer](GstppPad* pad, GstPadProbInfo* info) {
-    OsdSinkPadBufferProbe(pad, info, &frame_number);
+  int32_t frame_number = 0;
+  osd_sink_pad.AddProbeCallback(PadProbeType::BUFFER, [&frame_number](GstppPad* pad, GstPadProbeInfo* info) {
+    return OsdSinkPadBufferProbe(pad, info, &frame_number);
   });
 
   auto sink_pad = streammux.GetRequestPad("sink_0");
   auto src_pad = decoder.GetStaticPad("src");
 
-  *src_pad -->-- *sink_pad;
+  *src_pad --> *sink_pad;
 
-  delete sink_pad;
-  delete src_pad;
+  //delete sink_pad;
+  //delete src_pad;
 
   pipeline.Add(source, h264parser, decoder, streammux, pgie, nvvidconv, nvosd, sink);
 
@@ -124,7 +134,7 @@ GstPadProbeReturn OsdSinkPadBufferProbe(GstppPad* pad, GstPadProbeInfo* info, in
     display_meta = nvds_acquire_display_meta_from_pool(batch_meta);
     NvOSD_TextParams* txt_params = &display_meta->text_params[0];
     display_meta->num_labels = 1;
-    txt_params->display_text = g_malloc0(MAX_DISPLAY_LEN);
+    txt_params->display_text = reinterpret_cast<char*>(g_malloc0(MAX_DISPLAY_LEN));
     offset = snprintf(txt_params->display_text, MAX_DISPLAY_LEN, "Person = %d ",
                       person_count);
     offset = snprintf(txt_params->display_text + offset, MAX_DISPLAY_LEN,
@@ -135,7 +145,7 @@ GstPadProbeReturn OsdSinkPadBufferProbe(GstppPad* pad, GstPadProbeInfo* info, in
     txt_params->y_offset = 12;
 
     /* Font , font-color and font-size */
-    txt_params->font_params.font_name = "Serif";
+    txt_params->font_params.font_name = FONT_NAME;
     txt_params->font_params.font_size = 10;
     txt_params->font_params.font_color.red = 1.0;
     txt_params->font_params.font_color.green = 1.0;
@@ -155,6 +165,6 @@ GstPadProbeReturn OsdSinkPadBufferProbe(GstppPad* pad, GstPadProbeInfo* info, in
   LOG(INFO) << "Frame Number = " << *frame_number
             << " Number of objects = " << num_rects
             << " Vehicle Count = " << vehicle_count
-            << " Person Count = " person_count;
+            << " Person Count = " << person_count;
   (*frame_number)++;
 }

@@ -36,7 +36,6 @@ enum class PadProbeType {
     GST_PAD_PROBE(PUSH),
     GST_PAD_PROBE(PULL),
     GST_PAD_PROBE(BLOCKING),
-    GST_PAD_PROBE(PUSH),
     GST_PAD_PROBE(DATA_DOWNSTREAM),
     GST_PAD_PROBE(DATA_UPSTREAM),
     GST_PAD_PROBE(DATA_BOTH),
@@ -47,38 +46,25 @@ enum class PadProbeType {
 };
 #undef GST_PAD_PROBE
 
-using GstppPadProbeCallback = std::function<GstPadProbeReturn(GstppPad*, GstPadProbeInfo)>;
+using GstppPadProbeCallback = std::function<GstPadProbeReturn(GstppPad*, GstPadProbeInfo*)>;
 
 class GstppPad {
   NOCOPY(GstppPad);
+  class CbEntry;
  public:
-  GstppPad(const std::string& name, PadDirection dir)
-      : pad_(gst_pad_new(name.c_str(), dir)), name {
-    CHECK(pad_) << "cannot create pad " << name;
-  }
+  GstppPad(const std::string& name, PadDirection dir);
+  GstppPad(GstppElement* element, const std::string& name);
+  GstppPad(GstPad* pad);
+  ~GstppPad();
 
-  GstppPad(GstppElement* element, const std::string& name)
-      : pad_(gst_element_get_static_pad(element->element(), name)),
-        name_(fmt::format("{}@{}", element->name(), name)) {
-    CHECK(pad_) << "cannot get element " << *element << " pad " << name;
-  }
+  void LinkTo(GstppPad& downstream);
+  void AddProbeCallback(PadProbeType type, GstppPadProbeCallback cb);
 
-  ~GstppPad() {
-    if (pad_) g_object_unref(pad_);
-  }
-
-  void AddProbeCallback(PadProbeType type, GstppPadProbeCallback cb) {
-    CHECK(cb);
-    probe_cb_entries_.emplace_back({type, this, std::move(cb)});
-    gst_pad_add_probe(pad_, type, &GstppPad::ProbeCallback, (gpointer)&(probe_cb_entries_.back()));
-  }
-
-
-  static std::vector<GstppPad> GetAllPads(GstppElement* element);
+  static std::vector<GstppPad*> GetAllPads(GstppElement* element);
   static GstPadProbeReturn ProbeCallback(GstPad*, GstPadProbeInfo* info, gpointer entry_ptr);
 
-  bool LinkTo(GstppPad& downstream);
   // upstream-->downstream-->downstream1 
+  GstppPad& operator--(int) { return *this; }
   GstppPad& operator--() { return *this; }
   GstppPad& operator>(GstppPad& rhs) {
     this->LinkTo(rhs);
@@ -89,16 +75,8 @@ class GstppPad {
   friend class GstppElement;
 
  private:
-  GstppPad(GstPad* pad) {
-    pad_ = pad;
-    g_object_ref(pad);
-    gchar* name = gst_pad_get_name(pad);
-    name_.assign(name, strlen(name));
-    g_free(name);
-  }
-
-  std::string name_;
   GstPad* pad_ = nullptr;
+  std::string name_;
 
   struct CbEntry {
     PadProbeType type;

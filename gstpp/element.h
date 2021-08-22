@@ -43,8 +43,9 @@ class GstppElement {
   bool Pause() { return SetState(ElementState::PAUSED); }
 
   // upstream-->downstream-->downstream1 
+  GstppElement& operator--(int) { return *this; }
   GstppElement& operator--() { return *this; }
-  GstppElement& operator>(GstppElement& rhs) {
+  GstppElement& operator > (GstppElement& rhs) {
     this->LinkTo(rhs);
     return rhs;
   }
@@ -55,7 +56,7 @@ class GstppElement {
   template <typename T>
   void SetProperty(const std::string& key, T value) {
     CHECK(element());
-    g_object_set(element(), name.c_str(), value, nullptr);
+    g_object_set(element(), key.c_str(), value, nullptr);
   }
 
   GstppPad* GetStaticPad(const std::string& name);

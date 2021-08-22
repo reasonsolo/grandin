@@ -22,10 +22,6 @@ class GstppGtkPlayer {
   void Init(GstppElement* pipeline);
   void Destroy();
 
-  void SetMessageCb(const MessageType msg_type, GstppBusMessageCallback cb) {
-      msg_cb_map_[msg_type] = cb;
-  }
-
   void Show(int32_t refresh_sec = 1) { widget_set_->Show(refresh_sec); }
 
  private:

@@ -8,4 +8,5 @@ link_directories(${NVDS_LIB_DIR} ${CUDA_LIB_DIR})
 set(NVDS_LIBS cudart nvdsgst_meta nvds_meta cuda)
 add_executable(deepstream-test1 deepstream-test1.cc)
 target_link_libraries(deepstream-test1 gstpp gstpp_ui
+gflags glog
 ${NVDS_LIBS} -Wl,-rpath,${NVDS_LIB_DIR})

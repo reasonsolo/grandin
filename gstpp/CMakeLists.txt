@@ -7,6 +7,7 @@ add_library(gstpp
 target_link_libraries(gstpp PUBLIC
   ${GLIB_LIBRARIES}
   ${GSTREAMER_LIBRARIES}
+  fmt
   glog
 )
 

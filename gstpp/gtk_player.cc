@@ -28,12 +28,6 @@ void GstppGtkPlayer::Init(GstppElement* element) {
     widget_set_ = new WidgetSet(this);
     element_ = element;
     InstallDefaultCallbacks();
-    element_->bus()->AddMessageCallback([this](GstppBus* bus, GstppMessage* msg) {
-        auto it = this->msg_cb_map_.find(msg->type());
-        if (it != this->msg_cb_map_.end() && it->second) {
-            it->second(bus, msg);
-        }
-    });
  }  
 
 void GstppGtkPlayer::Destroy() {

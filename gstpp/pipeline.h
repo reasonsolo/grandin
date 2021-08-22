@@ -24,7 +24,7 @@ class GstppPipeline: public GstppElement {
 
   template <typename Elem>
   void Add(Elem&& element) {
-    AddElement(element)
+    AddElement(element);
   }
 
   template <typename Elem, typename... Rest>
