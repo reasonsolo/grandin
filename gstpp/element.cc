@@ -1,4 +1,5 @@
 #include "gstpp/element.h"
+#include "gstpp/pad.h"
 
 #include <glog/logging.h>
 
@@ -56,7 +57,8 @@ GstppElement* Create(const std::string& type, const std::string& name) {
   return nullptr;
 }
 
-void GstppElement::SetProperty(const std::string& key, const std::string& value) {
+template <>
+void GstppElement::SetProperty<std::string>(const std::string& key, std::string value) {
   g_object_set(gpointer(element()), key.c_str(), value.c_str(), nullptr);
 }
 
@@ -77,6 +79,24 @@ void GstppElement::UnSetFlag(gint flag) {
 void GstppElement::InitBus(GstBus* bus) {
   CHECK(!bus_);
   bus_ = new GstppBus(bus);
+}
+
+GstppPad* GstppElement::GetRequestPad(const std::string& name) {
+  auto pad = gst_element_get_request_pad(element(), name.c_str());
+  if (pad) {
+    return new GstppPad(pad);
+  }
+  LOG(ERROR) << "cannot get pad " << name << " from " << *this;
+  return nullptr;
+}
+
+GstppPad* GstppElement::GetStaticPad(const std::string& name) {
+  auto pad = gst_element_get_static_pad(element(), name.c_str());
+  if (pad) {
+    return new GstppPad(pad);
+  }
+  LOG(ERROR) << "cannot get pad " << name << " from " << *this;
+  return nullptr;
 }
 }
 }

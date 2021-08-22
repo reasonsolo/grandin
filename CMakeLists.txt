@@ -8,6 +8,8 @@ set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -O0 -g -ggdb3")
 set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2")
+set(CUDA_VER "11.1")
+set(NVDS_VER "5.1")
 
 project(grandin)
 
@@ -31,7 +33,9 @@ find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(GTest REQUIRED)
 
+
 add_subdirectory(vendor)
 add_subdirectory(gstpp)
+add_subdirectory(deepstream-samples)
 #add_subdirectory(server)
 

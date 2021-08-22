@@ -2,6 +2,7 @@ add_library(gstpp
   element.cc
   pipeline.cc
   message.cc
+  pad.cc
 )
 target_link_libraries(gstpp PUBLIC
   ${GLIB_LIBRARIES}

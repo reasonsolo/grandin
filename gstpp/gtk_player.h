@@ -22,7 +22,7 @@ class GstppGtkPlayer {
   void Init(GstppElement* pipeline);
   void Destroy();
 
-  void SetMessageCb(const MessageType msg_type, GstppBusCallback cb) {
+  void SetMessageCb(const MessageType msg_type, GstppBusMessageCallback cb) {
       msg_cb_map_[msg_type] = cb;
   }
 
@@ -42,22 +42,24 @@ class GstppGtkPlayer {
 
   bool RefreshUi();
   void InstallDefaultCallbacks();
+  void EnableVideoOverlay();
 
   struct WidgetSet {
-    GstppGtkPlayer* player;
-    GtkWidget* main_window;
-    GtkWidget* video_window;
-    GtkWidget* main_box;
-    GtkWidget* main_hbox;
-    GtkWidget* video_box;
-    GtkWidget* controls;
-    GtkWidget* play_button;
-    GtkWidget* pause_button;
-    GtkWidget* stop_button;
-    GtkWidget* slider;
-    gulong slider_update_signal_id;
+    GstppGtkPlayer* player = nullptr;
+    GtkWidget* main_window = nullptr;
+    GtkWidget* video_window = nullptr;
+    GtkWidget* main_box = nullptr;
+    GtkWidget* main_hbox = nullptr;
+    GtkWidget* video_box = nullptr;
+    GtkWidget* controls = nullptr;
+    GtkWidget* play_button = nullptr;
+    GtkWidget* pause_button = nullptr;
+    GtkWidget* stop_button = nullptr;
+    GtkWidget* slider = nullptr;
+    GtkWidget* streams_list = 0;
 
-    GtkWidget* streams_list;
+    gulong slider_update_signal_id = 0;
+    guintptr video_window_handle = 0;
 
     WidgetSet(GstppGtkPlayer* player);
     ~WidgetSet();
@@ -70,8 +72,6 @@ class GstppGtkPlayer {
   gint64 duration_ = GST_CLOCK_TIME_NONE;
   ElementState state_ = ElementState::RESET;
 
-  std::map<MessageType, GstppBusCallback> msg_cb_map_;
- 
 };
 
 }  // namespace gstpp

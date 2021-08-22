@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <gst/gst.h>
+#include "gst/video/videooverlay.h"
 
 namespace grd {
 namespace gstpp {
@@ -15,6 +16,7 @@ enum class MessageType {
   __GST_MSG_TYPE(BUFFERING),
   __GST_MSG_TYPE(CLOCK_LOST),
   __GST_MSG_TYPE(STATE_CHANGED),
+  __GST_MSG_TYPE(ELEMENT),
   NONE,
 };
 #undef __GST_MSG_TYPE
@@ -27,6 +29,9 @@ class GstppMessage {
   MessageType type() const { return type_; }
   GstMessage* msg() const { return msg_; }
 
+  bool IsVideoOverlayPrepareWindowHandlerMessage() const {
+    return gst_is_video_overlay_prepare_window_handle_message(msg_);
+  }
   std::string AsError();
   int32_t AsBufferingPercent();
 

@@ -1,7 +1,7 @@
 // author: zlz
 #pragma once
 
-#include "gstpp/element.h"
+#include "gstpp/pipeline.h"
 
 #include <gst/gst.h>
 
@@ -14,14 +14,13 @@ enum class PlayFlags {
   TEXT = (1 << 2)   /* We want subtitle output */
 } ;
 
-class GstppPlayBin: public GstppElement {
+class GstppPlayBin: public GstppPipeline {
  public:
   GstppPlayBin(const std::string& name)
-      : GstppElement("playbin", name) {
-    GstppElement::InitBus(gst_element_get_bus(element()));
+      : GstppPipeline(name, gst_element_factory_make("playbin", name.c_str())) {
   }
 
-  virtual ~GstppPlayBin() { delete bus_; }
+  virtual ~GstppPlayBin() = default;
 
   void ShowVideo(bool enable) {
     if (enable) {
@@ -44,8 +43,6 @@ class GstppPlayBin: public GstppElement {
       UnSetFlag((gint)PlayFlags::TEXT);
     }
   }
-
-  
 };
 
 }

@@ -19,6 +19,8 @@ enum class ElementState {
   PAUSED = GST_STATE_PAUSED,
 };
 
+class GstppPad;
+
 class GstppElement {
   NOCOPY(GstppElement);
  public:
@@ -49,7 +51,15 @@ class GstppElement {
 
   void SetFlag(gint flag);
   void UnSetFlag(gint flag);
-  void SetProperty(const std::string& key, const std::string& value);
+
+  template <typename T>
+  void SetProperty(const std::string& key, T value) {
+    CHECK(element());
+    g_object_set(element(), name.c_str(), value, nullptr);
+  }
+
+  GstppPad* GetStaticPad(const std::string& name);
+  GstppPad* GetRequestPad(const std::string& name);
 
   static GstppElement* Create(const std::string& type, const std::string& name);
 
@@ -57,6 +67,7 @@ class GstppElement {
   
   void AddToPipeline(GstppElement* p) { pipeline_ = p; }
 
+  void InitElement(GstElement* element) { element_ = element; };
   void InitBus(GstBus* bus);
   bool SetState(ElementState state);
 

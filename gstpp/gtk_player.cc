@@ -19,7 +19,6 @@ namespace grd {
 namespace gstpp {
 
 GstppGtkPlayer::GstppGtkPlayer(const std::string& name) {
-  InstallDefaultCallbacks();
 }
 
 GstppGtkPlayer::~GstppGtkPlayer() { Destroy(); }
@@ -28,6 +27,7 @@ void GstppGtkPlayer::Init(GstppElement* element) {
     CHECK(!element_ && !widget_set_);
     widget_set_ = new WidgetSet(this);
     element_ = element;
+    InstallDefaultCallbacks();
     element_->bus()->AddMessageCallback([this](GstppBus* bus, GstppMessage* msg) {
         auto it = this->msg_cb_map_.find(msg->type());
         if (it != this->msg_cb_map_.end() && it->second) {
@@ -98,9 +98,10 @@ GstppGtkPlayer::WidgetSet::~WidgetSet() {
   //gtk_widget_destroy(main_window);
 }
 
-void GstppGtkPlayer::WidgetSet::Show(int32_t refresh_sec) { 
-    gtk_widget_show_all(main_window);
-    g_timeout_add_seconds(refresh_sec, (GSourceFunc)(&GstppGtkPlayer::RefreshCb), this);
+void GstppGtkPlayer::WidgetSet::Show(int32_t refresh_sec) {
+  gtk_widget_show_all(main_window);
+  g_timeout_add_seconds(refresh_sec, (GSourceFunc)(&GstppGtkPlayer::RefreshCb),
+                        player);
 }
 
 /* static */
@@ -160,17 +161,37 @@ void GstppGtkPlayer::RealizeCb(GtkWidget* widget, GstppGtkPlayer* self) {
 
     /* Retrieve window handler from GDK */
 #if defined(GDK_WINDOWING_WIN32)
-  window_handle = (guintptr)GDK_WINDOW_HWND(window);
+  self->widget_set_->video_window_handle = (guintptr)GDK_WINDOW_HWND(window);
 #elif defined(GDK_WINDOWING_QUARTZ)
-  window_handle = gdk_quartz_window_get_nsview(window);
+  self->widget_set_->video_window_handle = gdk_quartz_window_get_nsview(window);
 #elif defined(GDK_WINDOWING_X11)
-  window_handle = GDK_WINDOW_XID(window);
+  self->widget_set_->video_window_handle = GDK_WINDOW_XID(window);
 #endif
   /* Pass it to playbin, which implements VideoOverlay and will forward it to
    * the video sink */
-  gst_video_overlay_set_window_handle(
-      GST_VIDEO_OVERLAY(self->element_->element()), window_handle);
+  self->EnableVideoOverlay();
 }
+
+void GstppGtkPlayer::EnableVideoOverlay() {
+  if (element_->type() == "playbin") {
+    gst_video_overlay_set_window_handle(
+        GST_VIDEO_OVERLAY(element_->element()), widget_set_->video_window_handle);
+  } else if (element_->type() == "pipeline") {
+    element_->bus()->AddSyncHandlerCallback([this](GstppBus* bus, GstppMessage* msg) {
+      if (msg->IsVideoOverlayPrepareWindowHandlerMessage()) {
+        return GST_BUS_PASS;
+      }
+      if (this->widget_set_->video_window_handle != 0) {
+        GstVideoOverlay* overlay = GST_VIDEO_OVERLAY(GST_MESSAGE_SRC(msg->msg()));
+        gst_video_overlay_set_window_handle(overlay, this->widget_set_->video_window_handle);
+      }
+    });
+    element_->bus()->EnableSyncHandler();
+  } else {
+    LOG(FATAL) << "video overlay not implemented for gst element " << *(element_);
+  }
+}
+
 
 /* static */
 gboolean GstppGtkPlayer::RefreshCb(GstppGtkPlayer* self) {
@@ -219,15 +240,18 @@ void GstppGtkPlayer::TagsCb(GstElement* element, gint stream, GstppGtkPlayer* se
 
 /* static */
 void GstppGtkPlayer::InstallDefaultCallbacks() {
-  msg_cb_map_[MessageType::ERROR] = [this](GstppBus* bus, GstppMessage* msg) {
-    LOG(ERROR) << "get error:" << msg->AsError();
-  };
-  msg_cb_map_[MessageType::EOS] = [this](GstppBus* bus, GstppMessage* msg) {
-    LOG(INFO) << "got eos reset";
-    this->element_->Ready();
-    this->state_ = ElementState::READY;
-  };
-  msg_cb_map_[MessageType::STATE_CHANGED] = [this] (GstppBus* bus, GstppMessage* msg) {
+  element_->bus()->SetTypedMessageCallback(
+      MessageType::ERROR, [this](GstppBus* bus, GstppMessage* msg) {
+        LOG(ERROR) << "get error:" << msg->AsError();
+      });
+  element_->bus()->SetTypedMessageCallback(
+      MessageType::EOS, [this](GstppBus* bus, GstppMessage* msg) {
+        LOG(INFO) << "got eos reset";
+        this->element_->Ready();
+        this->state_ = ElementState::READY;
+      });
+  element_->bus()->SetTypedMessageCallback(
+      MessageType::STATE_CHANGED, [this](GstppBus* bus, GstppMessage* msg) {
         GstState old_state, new_state, pending_state;
         gst_message_parse_state_changed(msg->msg(), &old_state, &new_state,
                                         &pending_state);
@@ -242,7 +266,7 @@ void GstppGtkPlayer::InstallDefaultCallbacks() {
             this->RefreshUi();
           }
         }
-      };
+      });
 }
 
 }  // namespace gstpp
