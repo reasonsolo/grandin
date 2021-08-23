@@ -16,16 +16,12 @@ GstppPad::GstppPad(GstppElement* element, const std::string& name)
   CHECK(pad_) << "cannot get element " << *element << " pad " << name;
 }
 
-GstppPad::GstppPad(GstPad* pad) {
-  pad_ = pad;
-  g_object_ref(pad);
-  gchar* name = gst_pad_get_name(pad);
-  name_.assign(name, strlen(name));
-  g_free(name);
+GstppPad::GstppPad(GstPad* pad, const std::string& name): pad_(pad), name_(name) {
+  gst_object_ref(pad_);
 }
 
 GstppPad::~GstppPad() {
-  if (pad_) g_object_unref(pad_);
+  if (pad_) gst_object_unref(pad_);
 }
 
 void GstppPad::AddProbeCallback(PadProbeType type, GstppPadProbeCallback cb) {
@@ -46,7 +42,10 @@ std::vector<GstppPad*> GstppPad::GetAllPads(GstppElement* element) {
     switch (gst_iterator_next(it, &value)) {
       case GST_ITERATOR_OK: {
         GstPad* pad = reinterpret_cast<GstPad*>(g_value_get_object(&value));
-        pads.push_back(new GstppPad(pad));
+        gchar* gname = gst_pad_get_name(pad);
+        std::string name(gname, strlen(gname));
+        g_free(gname);
+        pads.push_back(new GstppPad(pad, name));
         g_value_reset(&value);
         break;
       }
@@ -74,8 +73,8 @@ GstPadProbeReturn GstppPad::ProbeCallback(GstPad* gst_pad, GstPadProbeInfo* info
 }
 
 void GstppPad::LinkTo(GstppPad& downstream) {
-    CHECK(gst_pad_link(pad_, downstream.pad_) == GST_PAD_LINK_OK)
-    << "cannot link " << *this << " --> " << downstream;
+  CHECK(gst_pad_link(pad_, downstream.pad_) == GST_PAD_LINK_OK)
+      << "cannot link " << *this << " --> " << downstream;
 }
 
 std::ostream& operator<<(std::ostream& os, GstppPad& pad) {

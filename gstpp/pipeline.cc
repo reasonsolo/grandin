@@ -24,6 +24,7 @@ GstppPipeline::GstppPipeline(const std::string& type, const std::string& name,
   bus_ = new GstppBus(gst_element_get_bus(p));
   LOG(INFO) << (void*) gst_element_get_bus(p);
   LOG(INFO) << "get bus " << (void*)(bus_->bus());
+  gst_object_ref(p_);
 }
 
 GstppPipeline::~GstppPipeline() {

@@ -1,5 +1,9 @@
 // author: zlz
 
+#include <functional>
+#include <thread>
+#include <chrono>
+
 #include <gst/gst.h>
 #include <glib.h>
 #include <stdio.h>
@@ -17,7 +21,7 @@ using namespace grd::gstpp;
 
 DEFINE_string(
     src,
-    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4",
+    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.mjpeg",
     "input stream");
 DEFINE_string(pgie,
               "/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/"
@@ -46,6 +50,24 @@ int main(int argc, char** argv) {
   GstppMainLoop loop;
 
   GstppPipeline pipeline("pipeline");
+  auto* bus = pipeline.bus();
+  bus->SetTypedMessageCallback(MessageType::EOS, [&loop](GstppBus* bus, GstppMessage* msg) {
+      LOG(INFO) << "EOS, quit loop";
+      loop.Quit();
+  });
+  bus->SetTypedMessageCallback(MessageType::ERROR, [&loop](GstppBus* bus, GstppMessage* msg) {
+      LOG(ERROR) << "got error: " << msg->AsError();
+      loop.Quit();
+  });
+  bus->SetTypedMessageCallback(MessageType::APPLICATION, [](GstppBus* bus, GstppMessage* msg){
+      LOG(INFO) << "application message " << (void*)msg;
+      try {
+        std::any_cast<GstppBusMessageCallback>(msg->data())(bus, msg);
+      } catch (const std::bad_any_cast& e) {
+        LOG(ERROR) << "cannot process application msg " << e.what() << " type " << msg->data().type().name();
+      }
+  });
+  bus->WatchAndSignalConnect();
 
   GstppElement source("filesrc", "file-source");
   GstppElement h264parser("h264parse", "h264-parser");
@@ -58,23 +80,13 @@ int main(int argc, char** argv) {
 
   GstppElement sink("nveglglessink", "nvvideo-renderer");
   
-  source.SetProperty("location", FLAGS_pgie);
+  source.SetProperty("location", FLAGS_src);
   streammux.SetProperty("batch-size", 1);
   streammux.SetProperty("batched-push-timeout", 40000);
   streammux.SetProperty("width", FLAGS_width);
   streammux.SetProperty("height", FLAGS_height);
 
   pgie.SetProperty("config-file-path", FLAGS_pgie);
-
-  auto* bus = pipeline.bus();
-  bus->SetTypedMessageCallback(MessageType::EOS, [&loop](GstppBus* bus, GstppMessage* msg) {
-      LOG(INFO) << "EOS, quit loop";
-      loop.Quit();
-  });
-  bus->SetTypedMessageCallback(MessageType::ERROR, [&loop](GstppBus* bus, GstppMessage* msg) {
-      LOG(ERROR) << "got error: " << msg->AsError();
-      loop.Quit();
-  });
 
   GstppPad osd_sink_pad(&nvosd, "sink");
 
@@ -86,20 +98,31 @@ int main(int argc, char** argv) {
   auto sink_pad = streammux.GetRequestPad("sink_0");
   auto src_pad = decoder.GetStaticPad("src");
 
-  *src_pad --> *sink_pad;
-
-  //delete sink_pad;
-  //delete src_pad;
+  (*src_pad) --> (*sink_pad);
+  delete src_pad;
+  delete sink_pad;
 
   pipeline.Add(source, h264parser, decoder, streammux, pgie, nvvidconv, nvosd, sink);
 
   source --> h264parser --> decoder;
   streammux --> pgie --> nvvidconv --> nvosd --> sink;
 
+  using namespace std::chrono_literals;
+  bool stop = false;
+  std::thread msg_emittor = std::thread([bus, &stop] {
+    while (!stop) {
+      bus->PostApplicationMessage([](auto bus, auto msg) {
+        LOG(INFO) << "APPLICATION MESSAGE!!!!";
+      });
+      std::this_thread::sleep_for(1s);
+    }
+  });
   pipeline.Play();
   loop.Run();
   pipeline.Reset();
 
+  stop = true;
+  msg_emittor.join();
   return 0;
 }
 
@@ -167,4 +190,6 @@ GstPadProbeReturn OsdSinkPadBufferProbe(GstppPad* pad, GstPadProbeInfo* info, in
             << " Vehicle Count = " << vehicle_count
             << " Person Count = " << person_count;
   (*frame_number)++;
+
+  return GST_PAD_PROBE_OK;
 }

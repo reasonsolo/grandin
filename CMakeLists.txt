@@ -5,7 +5,7 @@ option(BUILD_UI ON)
 
 set(BUILD_UI ON)
 set(CMAKE_BUILD_TYPE "Debug")
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -O0 -g -ggdb3")
 set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2")
 set(CUDA_VER "11.1")

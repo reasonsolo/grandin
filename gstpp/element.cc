@@ -18,6 +18,9 @@ GstppElement::GstppElement(const std::string& ele_type,
                            GstElement* elem_ptr):
                            type_(ele_type), name_(ele_name), element_(elem_ptr) {
   // CHECK (element_) << "invalid gst element " << ele_type << "," << ele_name;
+  if (elem_ptr) {
+    gst_object_ref(element_);
+  }
 }
 
 GstppElement::~GstppElement() {
@@ -84,7 +87,7 @@ void GstppElement::InitBus(GstBus* bus) {
 GstppPad* GstppElement::GetRequestPad(const std::string& name) {
   auto pad = gst_element_get_request_pad(element(), name.c_str());
   if (pad) {
-    return new GstppPad(pad);
+    return new GstppPad(pad, name);
   }
   LOG(ERROR) << "cannot get pad " << name << " from " << *this;
   return nullptr;
@@ -92,8 +95,9 @@ GstppPad* GstppElement::GetRequestPad(const std::string& name) {
 
 GstppPad* GstppElement::GetStaticPad(const std::string& name) {
   auto pad = gst_element_get_static_pad(element(), name.c_str());
+  LOG(INFO) << "get static pad " << (void*)(pad);
   if (pad) {
-    return new GstppPad(pad);
+    return new GstppPad(pad, name);
   }
   LOG(ERROR) << "cannot get pad " << name << " from " << *this;
   return nullptr;

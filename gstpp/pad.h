@@ -54,9 +54,10 @@ class GstppPad {
  public:
   GstppPad(const std::string& name, PadDirection dir);
   GstppPad(GstppElement* element, const std::string& name);
-  GstppPad(GstPad* pad);
+  GstppPad(GstPad* pad, const std::string& name);
   ~GstppPad();
 
+  GstPad* pad() const { return pad_; }
   void LinkTo(GstppPad& downstream);
   void AddProbeCallback(PadProbeType type, GstppPadProbeCallback cb);
 
