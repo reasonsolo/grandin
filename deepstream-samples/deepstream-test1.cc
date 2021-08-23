@@ -32,7 +32,7 @@ DEFINE_int32(height, 480, "height");
 
 const int32_t MAX_DISPLAY_LEN = 64;
 const int32_t PGIE_CLASS_ID_VEHICLE = 0;
-const int32_t PGIE_CLASS_ID_PERSON = 0;
+const int32_t PGIE_CLASS_ID_PERSON = 2;
 const gchar PGIE_CLASSES_STR[4][32] = {"Vehicle", "TwoWheeler", "Person", "Roadsign"};
 char FONT_NAME[] = "Serif";
 
