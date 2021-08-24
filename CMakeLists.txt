@@ -36,6 +36,6 @@ find_package(GTest REQUIRED)
 
 add_subdirectory(vendor)
 add_subdirectory(gstpp)
-add_subdirectory(deepstream-samples)
-#add_subdirectory(server)
+add_subdirectory(deepstream)
+add_subdirectory(service)
 

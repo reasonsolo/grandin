@@ -95,7 +95,6 @@ GstppPad* GstppElement::GetRequestPad(const std::string& name) {
 
 GstppPad* GstppElement::GetStaticPad(const std::string& name) {
   auto pad = gst_element_get_static_pad(element(), name.c_str());
-  LOG(INFO) << "get static pad " << (void*)(pad);
   if (pad) {
     return new GstppPad(pad, name);
   }

@@ -1,4 +1,6 @@
 // author: zlz
+#pragma once
+
 #include <common/macros.h>
 #include <glog/logging.h>
 #include <gst/gst.h>
