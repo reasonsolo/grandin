@@ -18,7 +18,7 @@ class GstppApp {
  public:
   GstppApp(const std::string& name)
       : name_(name),
-        pipeline_(new GstppPipeline(name_ + "{}-pipeline")),
+        pipeline_(new GstppPipeline(name_ + "-pipeline")),
         bus_(pipeline_->bus()) {}
   virtual ~GstppApp() {
     pipeline_->Reset();
@@ -40,8 +40,14 @@ class GstppApp {
     }
   }
 
-  virtual void Run() { main_loop_.Run(); }
-  virtual void Quit() { main_loop_.Quit(); };
+  virtual void Run() {
+    pipeline_->Play();
+    main_loop_.Run();
+  }
+  virtual void Quit() {
+    pipeline_->Reset();
+    main_loop_.Quit();
+  };
 
   void RunInLoop(GstppAppFunctor functor) {
     if (!functor) return;

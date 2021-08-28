@@ -4,7 +4,7 @@
 
 DEFINE_string(
     src,
-    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_1080p_h264.mp4",
+    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264",
     "input stream");
 DEFINE_string(pgie,
               "/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/"
@@ -67,10 +67,12 @@ void TestApp::InitBus() {
                      << " type " << msg->data().type().name();
         }
       });
-  bus_->WatchAndSignalConnect();
+  bus_->AddWatch();
 }
 
 void TestApp::InitPipeline() {
+  LOG(INFO) << "init pipeline";
+
   source_.SetProperty("location", FLAGS_src);
   streammux_.SetProperty("batch-size", 1);
   streammux_.SetProperty("batched-push-timeout", 40000);
@@ -79,24 +81,23 @@ void TestApp::InitPipeline() {
 
   pgie_.SetProperty("config-file-path", FLAGS_pgie);
 
-  GstppPad osd_sink_pad(&nvosd_, "sink");
-
-  osd_sink_pad.AddProbeCallback(
-      PadProbeType::BUFFER, [this](GstppPad* pad, GstPadProbeInfo* info) {
-        return OsdSinkPadBufferProbe(pad, info, &(this->frame_number_));
-      });
-
   auto sink_pad = streammux_.GetRequestPad("sink_0");
   auto src_pad = decoder_.GetStaticPad("src");
 
   (*src_pad)--> (*sink_pad);
-  delete src_pad;
-  delete sink_pad;
+  //delete src_pad;
+  //delete sink_pad;
 
   pipeline_->Add(source_, h264parser_, decoder_, streammux_, pgie_, nvvidconv_, nvosd_, sink_);
 
   source_ --> h264parser_ --> decoder_;
   streammux_ --> pgie_ --> nvvidconv_ --> nvosd_ --> sink_;
+
+  GstppPad osd_sink_pad(&nvosd_, "sink");
+  osd_sink_pad.AddProbeCallback(
+      PadProbeType::BUFFER, [this](GstppPad* pad, GstPadProbeInfo* info) {
+        return OsdSinkPadBufferProbe(pad, info, &(this->frame_number_));
+      });
 
 }
 
@@ -105,6 +106,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
                                SrcStopCallback stop_cb) {
   if (available_sink_slots_.empty()) { 
     LOG(INFO) << "no available input slot for " << name;
+    if (start_cb) start_cb(false);
     return false;
   }
   int32_t slot_idx = available_sink_slots_.back();
@@ -113,6 +115,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
   if (srcbin == nullptr) {
     LOG(INFO) << "cannot create srcbin for " << name;
     available_sink_slots_.push_back(slot_idx);
+    if (start_cb) start_cb(false);
     return false;
   }
   if (dynamic_source_list_[slot_idx].srcbin) {
@@ -122,7 +125,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
       DynamicSource{srcbin, slot_idx, source_count_++, std::move(start_cb),
                     std::move(stop_cb), TimeUtils::NowUs()};
 
-  srcbin->SetNewPadCallback([slot_idx, srcbin, this](GstppPad* pad) {
+  srcbin->SetNewPadCallback([start_cb, slot_idx, srcbin, this](GstppPad* pad) {
     GstCaps* caps = gst_pad_query_caps(pad->pad(), NULL);
     const GstStructure* structure = gst_caps_get_structure(caps, 0);
     const gchar* name = gst_structure_get_name(structure);
@@ -137,15 +140,17 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
         CHECK(srcbin == this->dynamic_source_list_[slot_idx].srcbin)
         << "srcbin " << (void*)srcbin << " listbin " << slot_idx << ": " << this->dynamic_source_list_[slot_idx].srcbin;
         if (start_cb) {
-          start_cb();
+          start_cb(true);
         }
       } else {
         LOG(INFO) << "cannot link srcbin " << srcbin->name() << " to pipeline";
         this->RemoveSourceByIdx(slot_idx);
       }
       delete sink_pad;
+      return;
     } else {
-      LOG(INFO) << "unknown cap " << name;
+      LOG(ERROR) << "unknown cap " << name;
+      if (start_cb) start_cb(false);
     }
   });
 

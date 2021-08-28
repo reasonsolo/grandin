@@ -9,6 +9,11 @@
 #include <gstnvdsmeta.h>
 #include <gflags/gflags.h>
 
+DEFINE_string(
+    src2,
+    "/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p_h264.mp4",
+    "input stream");
+
 int main(int argc, char** argv) {
   int32_t current_device = -1;
   cudaGetDevice(&current_device);
@@ -23,9 +28,16 @@ int main(int argc, char** argv) {
   app.Init();
   app.Start();
 
+  LOG(INFO) << "event1";
   using namespace std::chrono_literals;
+  //app.AddSource("uribin", FLAGS_src2, 
+  //    []() { LOG(INFO) << "src2 added"; },
+  //    [](bool success) { LOG(INFO) << "src2 removed " << success; });
+
+  std::this_thread::sleep_for(1s);
   bool stop = false;
   while (!stop) {
+    LOG(INFO) << "event2";
     app.bus()->PostApplicationMessage([](auto bus, auto msg) { LOG(INFO) << "APPLICATION MESSAGE!!!!"; });
     std::this_thread::sleep_for(1s);
   }

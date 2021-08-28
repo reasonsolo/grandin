@@ -81,8 +81,8 @@ GstPadProbeReturn GstppPad::ProbeCallback(GstPad* gst_pad, GstPadProbeInfo* info
 
 bool GstppPad::LinkTo(GstppPad& downstream) {
   if (gst_pad_link(pad_, downstream.pad_) == GST_PAD_LINK_OK) {
+    LOG(INFO) << "link " << *this << " to " << downstream;
     return true;
-
   } 
    LOG(ERROR)  << "cannot link " << *this << " --> " << downstream;
    return false;

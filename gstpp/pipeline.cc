@@ -34,6 +34,7 @@ GstppPipeline::~GstppPipeline() {
 }
 
 void GstppPipeline::AddElement(GstppElement& element) {
+  LOG(INFO) << "add " << element << " to " << *this;
   CHECK(gst_bin_add(GST_BIN(p_), element.element()))
       << "cannot add " << element << " to " << *this;
   element.AddToPipeline(this);

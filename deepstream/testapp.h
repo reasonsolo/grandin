@@ -21,7 +21,7 @@
 namespace grd {
 namespace deepstream {
 
-using SrcStartCallback = std::function<void()>;
+using SrcStartCallback = std::function<void(bool)>;
 using SrcStopCallback = std::function<void(bool)>;
 
 using ::grd::gstpp::GstppApp;
@@ -38,8 +38,8 @@ class TestApp : public grd::gstpp::GstppApp {
   }
 
   bool Init() override {
-    InitBus();
     InitPipeline();
+    InitBus();
     return true;
   }
 

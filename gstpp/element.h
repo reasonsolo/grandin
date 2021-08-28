@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <type_traits>
 
 #include "common/macros.h"
 #include "gstpp/bus.h"
@@ -67,10 +68,24 @@ class GstppElement {
   void SetFlag(gint flag);
   void UnSetFlag(gint flag);
 
-  template <typename T>
+  template <typename T, typename = std::enable_if_t<std::is_arithmetic<T>::value>>
   void SetProperty(const std::string& key, T value) {
     CHECK(element());
     g_object_set(element(), key.c_str(), value, nullptr);
+    T get_val;
+    g_object_get(element(), key.c_str(), &get_val, nullptr);
+    LOG(INFO) << "set property " << *this << " " << key << ":" << value << " get " << get_val;
+    CHECK(get_val == value) << "set " << value << " get " << get_val;
+  }
+
+  void SetProperty(const std::string& key, const std::string& value) {
+    CHECK(element());
+    g_object_set(element(), key.c_str(), value.c_str(), nullptr);
+    gchar* get_val;
+    g_object_get(element(), key.c_str(), &get_val, nullptr);
+    LOG(INFO) << "set property " << *this << " " << key << ":" << value << " get " << get_val;
+    CHECK(strcmp(value.c_str(), get_val) == 0) << "set " << value << " get " << get_val;
+    g_free(get_val);
   }
 
   GstppPad* GetStaticPad(const std::string& name);

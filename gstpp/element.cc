@@ -10,6 +10,7 @@ GstppElement::GstppElement(const std::string& ele_type,
                            const std::string& ele_name):
                            type_(ele_type), name_(ele_name) {
   element_ = gst_element_factory_make(type_.c_str(), name_.c_str());
+  LOG(INFO) << "create element " << type_ << ": " << name_;
   CHECK (element_) << "cannot make gst element " << ele_type << "," << ele_name;
 }
 
@@ -35,6 +36,7 @@ GstppElement::~GstppElement() {
 void GstppElement::LinkTo(GstppElement& downstream) {
   CHECK(gst_element_link(element(), downstream.element_))
   << "cannot link " << *this << "-->" << downstream;
+  LOG(INFO) << "link " << *this << " to " << downstream;
 }
 
 bool GstppElement::SetState(ElementState state) {
@@ -67,11 +69,6 @@ GstppElement* Create(const std::string& type, const std::string& name) {
     return new GstppElement(type, name, elem);
   }
   return nullptr;
-}
-
-template <>
-void GstppElement::SetProperty<std::string>(const std::string& key, std::string value) {
-  g_object_set(gpointer(element()), key.c_str(), value.c_str(), nullptr);
 }
 
 void GstppElement::SetFlag(gint flag) {
