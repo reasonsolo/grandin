@@ -34,12 +34,14 @@ GstppPipeline::~GstppPipeline() {
 }
 
 void GstppPipeline::AddElement(GstppElement& element) {
-  CHECK(elements_.count(&element) == 0)
-      << "element " << element << " already in " << *this;
   CHECK(gst_bin_add(GST_BIN(p_), element.element()))
       << "cannot add " << element << " to " << *this;
-  elements_.insert(&element);
   element.AddToPipeline(this);
+}
+
+void GstppPipeline::RemoveElement(GstppElement& element) {
+  gst_bin_remove(GST_BIN(p_), element.element());
+  element.RemoveFromPipeline(this);
 }
 
 /* static */

@@ -1,12 +1,18 @@
 // author: zlz
+#include <gst/gst.h>
+#include <glib.h>
+
 #include <functional>
 
 #include "gstpp/element.h"
-#include "gstpp/pipeline.h"
 #include "gstpp/main_loop.h"
+#include "gstpp/pipeline.h"
 
 namespace grd {
 namespace gstpp {
+
+class GstppApp;
+using GstppAppFunctor = std::function<void(GstppApp*)>;
 
 class GstppApp {
  public:
@@ -21,33 +27,54 @@ class GstppApp {
 
   virtual bool Init() = 0;
 
-  void Start() { 
-      loop_thread_ = std::thread([this] { this->Run(); });
+  void Start() {
+    loop_thread_ = std::thread([this] { this->Run(); });
   }
 
   void Stop() {
-      if (loop_thread_.joinable()) {
-        RunInLoop([](auto* app) {
-            app->Quit();
-        });
-        loop_thread_.join();
-      }
+    if (loop_thread_.joinable()) {
+      RunInLoop([](auto* app) { app->Quit(); });
+      loop_thread_.join();
+    } else {
+      Quit();
+    }
   }
 
   virtual void Run() { main_loop_.Run(); }
   virtual void Quit() { main_loop_.Quit(); };
 
-  void RunInLoop(std::function<void(GstppApp*)> functor) {
-      if (!functor) return;
-      bus()->PostApplicationMessage([this, functor=std::move(functor)](auto bus, auto msg) {
-          functor(this);
-      });
+  void RunInLoop(GstppAppFunctor functor) {
+    if (!functor) return;
+    bus()->PostApplicationMessage([this, functor = std::move(functor)](
+                                      auto bus, auto msg) { functor(this); });
+  }
+
+  void RunInMs(GstppAppFunctor functor, int32_t ms) {
+    auto task = new TimerTask;
+    task->functor = std::move(functor);
+    task->app = this;
+    g_timeout_add(ms, &GstppApp::TimerCallback, task);
   }
 
   GstppBus* bus() { return bus_; }
   GstppPipeline* pipeline() { return pipeline_; }
 
  protected:
+
+  static gboolean TimerCallback(gpointer data) {
+    auto task = reinterpret_cast<TimerTask*>(data);
+    if (task && task->functor) {
+      task->functor(task->app);
+      delete task;
+    }
+    return true;
+  }
+
+  struct TimerTask {
+    GstppApp* app;
+    GstppAppFunctor functor;
+  };
+
   std::string name_;
   GstppMainLoop main_loop_;
   GstppPipeline* pipeline_ = nullptr;
@@ -55,5 +82,5 @@ class GstppApp {
 
   std::thread loop_thread_;
 };
-}
-}
+}  // namespace gstpp
+}  // namespace grd

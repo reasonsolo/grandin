@@ -33,9 +33,12 @@ find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(GTest REQUIRED)
 
+link_directories(.)
+
 
 add_subdirectory(vendor)
+
 add_subdirectory(gstpp)
 add_subdirectory(deepstream)
 add_subdirectory(service)
-
+add_subdirectory(test)

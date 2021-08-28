@@ -1,0 +1,92 @@
+// author: zlz
+
+#include <cuda_runtime_api.h>
+#include <gflags/gflags.h>
+#include <glib.h>
+#include <gst/gst.h>
+#include <gstnvdsmeta.h>
+#include <stdio.h>
+
+#include <chrono>
+#include <functional>
+#include <thread>
+#include <deque>
+
+#include "gstpp/app.h"
+#include "gstpp/element.h"
+#include "gstpp/gtk_player.h"
+#include "gstpp/main_loop.h"
+#include "gstpp/pad.h"
+
+namespace grd {
+namespace deepstream {
+
+using SrcStartCallback = std::function<void()>;
+using SrcStopCallback = std::function<void(bool)>;
+
+using ::grd::gstpp::GstppApp;
+using ::grd::gstpp::GstppElement;
+
+class TestApp : public grd::gstpp::GstppApp {
+ public:
+  TestApp();
+  virtual ~TestApp() {
+    Stop();
+    for (auto&& src : dynamic_source_list_) {
+      delete src.srcbin;
+    }
+  }
+
+  bool Init() override {
+    InitBus();
+    InitPipeline();
+    return true;
+  }
+
+  void AddSource(const std::string& name, const std::string& uri,
+                 SrcStartCallback start_cb, SrcStopCallback stop_cb) {
+    gstpp::GstppApp::RunInLoop([=](gstpp::GstppApp* app) {
+      this->AddSourceFromUri(name, uri, start_cb, stop_cb);
+    });
+  }
+  void RemoveSource(const std::string& name) {
+    gstpp::GstppApp::RunInLoop(
+        [=](gstpp::GstppApp* app) { this->RemoveSource(name); });
+  }
+
+ private:
+  bool AddSourceFromUri(const std::string& name, const std::string& uri,
+                        SrcStartCallback start_cb, SrcStopCallback stop_cb);
+  bool RemoveSourceByName(const std::string& name);
+  bool RemoveSourceByIdx(const int32_t idx);
+
+  void InitBus();
+  void InitPipeline();
+
+  int32_t frame_number_ = 0;
+  GstppElement source_;
+  GstppElement h264parser_;
+  GstppElement decoder_;
+  GstppElement streammux_;
+  GstppElement pgie_;
+  GstppElement nvvidconv_;
+  GstppElement nvosd_;
+  GstppElement sink_;
+
+  struct DynamicSource {
+    GstppElement* srcbin;
+    int32_t sink_slot;
+    int64_t source_count;
+    SrcStartCallback start_cb;
+    SrcStopCallback stop_cb;
+    int64_t create_timestamp;
+  };
+
+  std::deque<int32_t> available_sink_slots_;
+  std::atomic<int64_t> source_count_{0};
+  std::vector<DynamicSource> dynamic_source_list_;
+  std::unordered_map<std::string, int32_t> dynamic_source_name_idx_map_;
+};
+
+}  // namespace deepstream
+}  // namespace grd

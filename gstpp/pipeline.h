@@ -21,6 +21,7 @@ class GstppPipeline: public GstppElement {
   GstElement* element() const override { return p_; }
 
   void AddElement(GstppElement& element);
+  void RemoveElement(GstppElement& element);
 
   template <typename Elem>
   void Add(Elem&& element) {
@@ -38,9 +39,6 @@ class GstppPipeline: public GstppElement {
 
 private:
   GstElement* p_ = nullptr;
-
-  std::set<GstppElement*> elements_;
-
   friend std::ostream& operator<<(std::ostream&, GstppPipeline&);
 };
 

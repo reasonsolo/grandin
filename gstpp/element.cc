@@ -32,16 +32,25 @@ GstppElement::~GstppElement() {
   }
 }
 
-
 void GstppElement::LinkTo(GstppElement& downstream) {
   CHECK(gst_element_link(element(), downstream.element_))
   << "cannot link " << *this << "-->" << downstream;
 }
 
 bool GstppElement::SetState(ElementState state) {
-  if (gst_element_set_state(element(), static_cast<GstState>(state)) != GST_STATE_CHANGE_FAILURE) {
-    state_ = state;
-    return true;
+  auto ret = gst_element_set_state(element(), static_cast<GstState>(state));
+  switch (ret) {
+    case GST_STATE_CHANGE_SUCCESS:
+    case GST_STATE_CHANGE_NO_PREROLL:
+      return true;
+    case GST_STATE_CHANGE_ASYNC:
+      ret = gst_element_get_state(element(), NULL, NULL, GST_CLOCK_TIME_NONE);
+      return ret == GST_STATE_CHANGE_SUCCESS || ret == GST_STATE_CHANGE_NO_PREROLL;
+    case GST_STATE_CHANGE_FAILURE:
+      return false;
+    default:
+      LOG(INFO) << "unexpected state change result " << ret;
+      return false;
   }
   return false;
 }
@@ -100,6 +109,42 @@ GstppPad* GstppElement::GetStaticPad(const std::string& name) {
   }
   LOG(ERROR) << "cannot get pad " << name << " from " << *this;
   return nullptr;
+}
+
+void GstppElement::SetNewPadCallback(ElementPadCallback callback) {
+  new_pad_cb_ = std::move(callback);
+  g_signal_connect(G_OBJECT(element_), "pad-added", G_CALLBACK(&GstppElement::OnPadAdded), this);
+}
+void GstppElement::SetNewChildCallback(ElementChildCallback callback) {
+  new_child_cb_ = std::move(callback);
+  g_signal_connect(G_OBJECT(element_), "child-added", G_CALLBACK(&GstppElement::OnChildAdded), this);
+}
+
+/* static */
+void GstppElement::OnPadAdded(GstElement* elem, GstPad* pad, gpointer data) {
+  auto self = static_cast<GstppElement*>(data);
+  GstppPad gstpp_pad(pad);
+  if (self->new_pad_cb_) { 
+    self->new_pad_cb_(&gstpp_pad);
+  }
+}
+
+/* static */
+void GstppElement::OnChildAdded(GstChildProxy* child_proxy, GObject* obj, gchar* name, gpointer data) {
+  auto self = static_cast<GstppElement*>(data);
+  if (self->new_child_cb_) { 
+    self->new_child_cb_(child_proxy, obj, name);
+  }
+
+}
+
+/* static */
+GstppElement* GstppElement::CreateSourceFromUri(const std::string& uid, const std::string& uri) { 
+  std::string name = fmt::format("srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
+  LOG(INFO) << "create source element " << name << " from url " << uri;
+  auto bin = new GstppElement("uridecodebin", name.c_str());
+  bin->SetProperty("uri", uri);
+  return bin;
 }
 }
 }
