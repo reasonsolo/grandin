@@ -34,6 +34,7 @@ find_package(GTest REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vendor/gstreamer)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vendor/workflow/_include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vendor/)
 
 
 add_subdirectory(vendor)

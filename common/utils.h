@@ -17,9 +17,12 @@
 #include <string>
 #include <unordered_map>
 #include <iomanip>
+#include <mutex>
 
-#include "workflow/HttpMessage.h"
+#include "workflow/WFHttpServer.h"
+#include "workflow/WFTaskFactory.h"
 #include "vendor/fmt/include/fmt/format.h"
+#include "vendor/json/single_include/nlohmann/json.hpp"
 
 #define gettid() syscall(SYS_gettid)
 
@@ -135,26 +138,39 @@ class CryptoUtils {
 };
 
 using QueryMap = std::unordered_map<std::string, std::string>;
+namespace json = nlohmann;
 class HttpUtils {
  public:
-  static std::unordered_map<std::string, std::string> GetQueryMap(
-      protocol::HttpRequest* http_req) {
-    std::string uri = http_req->get_request_uri();
-    auto param_start = uri.find('?');
-    std::unordered_map<std::string, std::string> ret;
-    if (param_start != std::string::npos) {
-      auto param_segs = StringUtils::Split(uri.substr(param_start + 1), '&');
+  static bool ParseUri(const std::string& uri, std::string* path, QueryMap* qmap) {
+    auto path_begin = uri.find('/');
+    auto param_begin = uri.find('?');
+    *path = uri.substr(path_begin, param_begin);
+    qmap->clear();
+    if (param_begin != std::string::npos) {
+      auto param_segs = StringUtils::Split(uri.substr(param_begin + 1), '&');
       for (auto&& seg : param_segs) {
         auto kv = StringUtils::Split(seg, '=');
         if (kv.size() == 2) {
-          ret[kv[0]] = kv[1];
+          (*qmap)[kv[0]] = kv[1];
         } else if (kv.size() == 1) {
-          ret[kv[0]] = "";
+          (*qmap)[kv[0]] = "";
         }
       }
     }
-    return ret;
+    return true;
+  }
+
+  static void RespondJson(WFHttpTask* t, json::json* resp_json) {
+    auto resp = t->get_resp();
+    resp->add_header_pair("content-type", "application/javascript");
+    resp->set_status_code("200");
+    std::string body = resp_json->dump(4);
+    resp->append_output_body(static_cast<const void*>(body.data()), body.size());
   }
 };
+
+using Mutex = std::mutex;
+using Lock = std::unique_lock<Mutex>;
+
 
 }  // namespace grd

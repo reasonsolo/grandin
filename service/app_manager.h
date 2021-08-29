@@ -1,9 +1,11 @@
 // author: zlz
 #ifndef GRANDIN_SERVICE_APP_MANAGER_H_
-#define GRANDIN_SERVICE_APP_MANAGER_H_ 
+#define GRANDIN_SERVICE_APP_MANAGER_H_
 
 #include <map>
 #include <string>
+
+#include "common/macros.h"
 
 namespace grd {
 namespace gstpp {
@@ -12,17 +14,15 @@ class GstppApp;
 
 namespace service {
 class AppManager {
+  SINGLETON(AppManager);
  public:
-  ~AppManager();
+  ~AppManager() = default;
 
-  void Init();
+  void Init() {}
 
-  static gstpp::GstppApp* GetApp();
-  static AppManager& GetInstance();
+  gstpp::GstppApp* GetApp(const std::string& name);
 
  private:
-  AppManager();
-
   std::map<std::string, gstpp::GstppApp*> app_map_;
 };
 }  // namespace service

@@ -9,6 +9,7 @@
 #include <glog/logging.h>
 
 #include "common/utils.h"
+#include "common/monitor.h"
 #include "service/auth_manager.h"
 
 #include "workflow/HttpMessage.h"
@@ -36,13 +37,19 @@ class HttpRouter {
     protocol::HttpResponse* resp= task->get_resp();
 
     std::string uri = req->get_request_uri();
+
+    std::string path;
+    QueryMap query_map;
+
+    HttpUtils::ParseUri(uri, &path, &query_map);
+
     LOG(INFO) << "Route uri: " << uri;
     auto it = router_map_.find(uri);
     if (it == router_map_.end()) {
       Respond404(resp);
     } else {
-      auto query_map = HttpUtils::GetQueryMap(task->get_req());
       if (AuthManager::GetInstance().Authorize(&query_map)) {
+        MONITOR_COUNTER("grandin.routed", 1);
         LOG(INFO) << "user " << query_map["user"] << " authorized";
         it->second(task, &query_map);
       } else {
@@ -62,10 +69,12 @@ class HttpRouter {
   }
 
   void Respond404(protocol::HttpResponse* resp) {
+    MONITOR_COUNTER("grandin.http404", 1);
     HttpRespond("404", "404 Not found.", resp);
   }
 
   void Respond403(protocol::HttpResponse* resp) {
+    MONITOR_COUNTER("grandin.http403", 1);
     HttpRespond("403", "403 Not authorized.", resp);
   }
 

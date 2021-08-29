@@ -19,3 +19,9 @@
 [submodule "vendor/yaml-cpp"]
 	path = vendor/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "vendor/DogFood"]
+	path = vendor/DogFood
+	url = https://github.com/garrettsickles/DogFood.git
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git
