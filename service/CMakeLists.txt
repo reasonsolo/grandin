@@ -7,5 +7,8 @@ link_directories(${WORKFLOW_LIB_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../vendor/workflow/_include)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../vendor/workflow/workflow/_lib)
 
-add_executable(grandin grandin_main.cc)
-target_link_libraries(grandin gflags glog workflow pthread ssl crypto rt)
+add_executable(grandin
+ grandin_main.cc
+ auth_manager.cc
+)
+target_link_libraries(grandin fmt gflags glog workflow pthread ssl crypto rt)

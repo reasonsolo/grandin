@@ -3,13 +3,13 @@
 // https://gstreamer.freedesktop.org/documentation/tutorials/basic/toolkit-integration.html?gi-language=c
 #pragma once
 
-#include <string>
-
-#include "gstpp/pipeline.h"
-#include "gstpp/element.h"
-
 #include <gst/gst.h>
 #include <gtk/gtk.h>
+
+#include <string>
+
+#include "gstpp/element.h"
+#include "gstpp/pipeline.h"
 
 namespace grd {
 namespace gstpp {
@@ -29,8 +29,9 @@ class GstppGtkPlayer {
   static void PlayCb(GtkButton* button, GstppGtkPlayer* self);
   static void PauseCb(GtkButton* button, GstppGtkPlayer* self);
   static void StopCb(GtkButton* button, GstppGtkPlayer* self);
-  static void DeleteCb(GtkWidget* widget, GdkEvent* event, GstppGtkPlayer* self);
-  static void SliderCb(GtkRange *range, GstppGtkPlayer* self);
+  static void DeleteCb(GtkWidget* widget, GdkEvent* event,
+                       GstppGtkPlayer* self);
+  static void SliderCb(GtkRange* range, GstppGtkPlayer* self);
   static gboolean DrawCb(GtkWidget* widget, cairo_t* cr, GstppGtkPlayer* self);
   static gboolean RefreshCb(GstppGtkPlayer* self);
   static void TagsCb(GstElement* pipeline, gint stream, GstppGtkPlayer* self);
@@ -67,7 +68,6 @@ class GstppGtkPlayer {
   GstppElement* element_ = nullptr;
   gint64 duration_ = GST_CLOCK_TIME_NONE;
   ElementState state_ = ElementState::RESET;
-
 };
 
 }  // namespace gstpp

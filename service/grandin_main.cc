@@ -12,6 +12,7 @@
 
 DEFINE_int32(port, 8001, "port");
 
+using grd::QueryMap;
 using grd::service::HttpRouter;
 using grd::service::AuthManager;
 
@@ -23,16 +24,13 @@ int main(int argc, char** argv) {
 
   // init routings
   HttpRouter router;
-  router.Route("/auth", [](WFHttpTask* t) {
-    AuthManager::GetInstance().ProcessAuthRequest(t);
-  });
-  router.Route("/video/new", [](WFHttpTask* t) {
+  router.Route("/video/new", [](WFHttpTask* t, QueryMap* query_map) {
       // TODO
   });
-  router.Route("/video/query", [](WFHttpTask* t) {
+  router.Route("/video/query", [](WFHttpTask* t, QueryMap* query_map) {
       // TODO
   });
-  router.Route("/video/del", [](WFHttpTask* t) {
+  router.Route("/video/del", [](WFHttpTask* t, QueryMap* query_map) {
       // TODO
   });
 

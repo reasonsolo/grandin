@@ -21,8 +21,6 @@ message(STATUS "!!!!!!!! ${GSTREAMER_LIBRARY_DIRS}  ${GSTREAMER_INCLUDE_DIRS}  $
 
 include_directories(${GLIB_INCLUDE_DIRS} ${GSTREAMER_INCLUDE_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS} ${GSTREAMER_LIBRARY_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} vendor/gstreamer)
-
 if (BUILD_UI)
 pkg_check_modules(GTK REQUIRED gtk+-3.0)
 include_directories(${GTK_INCLUDE_DIRS} ${GTK_INCLUDE_DIRS})
@@ -33,7 +31,9 @@ find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(GTest REQUIRED)
 
-link_directories(.)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vendor/gstreamer)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vendor/workflow/_include)
 
 
 add_subdirectory(vendor)

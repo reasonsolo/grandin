@@ -1,4 +1,5 @@
 // author: zlz
+#pragma once
 #include <gst/gst.h>
 #include <glib.h>
 
