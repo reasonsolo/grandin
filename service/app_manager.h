@@ -20,7 +20,7 @@ class AppManager {
 
   void Init() {}
 
-  gstpp::GstppApp* GetApp(const std::string& name);
+  gstpp::GstppApp* GetApp(const std::string& name) { return nullptr; }
 
  private:
   std::map<std::string, gstpp::GstppApp*> app_map_;

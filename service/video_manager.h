@@ -13,6 +13,11 @@
 namespace grd {
 namespace service {
 
+enum class RespCode {
+  OK = 0,
+  APP_ERROR = 101,
+};
+
 enum class VideoStatus {
   PENDING = 0,
   INPROGRESS = 1,
@@ -25,6 +30,7 @@ struct VideoInput {
   std::string uri;
   std::string app_name;
   std::string user;
+  std::string uid;
   VideoStatus status = VideoStatus::PENDING;
   std::string error_msg;
 
@@ -34,6 +40,7 @@ struct VideoInput {
     status = VideoStatus::ERROR;
     error_msg = msg;
   }
+
 };
 
 class VideoManager {
@@ -53,10 +60,11 @@ class VideoManager {
 
  private:
 
-  void RespondJson(WFHttpTask* t, json::json* resp);
+  static VideoInput* CreateVideoInput(QueryMap* qmap);
+  void RespondError(WFHttpTask* t, const RespCode code, const std::string& msg);
 
   Mutex mtx_;
-  std::unordered_map<std::string, VideoInput> video_map_;
+  std::unordered_map<std::string, VideoInput*> video_map_;
 };
 }  // namespace service
 }  // namespace grd

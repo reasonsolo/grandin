@@ -4,6 +4,8 @@
 #include <glib.h>
 
 #include <functional>
+#include <string>
+#include <thread>
 
 #include "gstpp/element.h"
 #include "gstpp/main_loop.h"

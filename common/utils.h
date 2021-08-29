@@ -160,12 +160,18 @@ class HttpUtils {
     return true;
   }
 
-  static void RespondJson(WFHttpTask* t, json::json* resp_json) {
+  static void RespondJson(WFHttpTask* t, const json::json& resp_json) {
     auto resp = t->get_resp();
     resp->add_header_pair("content-type", "application/javascript");
     resp->set_status_code("200");
-    std::string body = resp_json->dump(4);
+    std::string body = resp_json.dump(4);
     resp->append_output_body(static_cast<const void*>(body.data()), body.size());
+  }
+
+  static WFCounterTask* RespondLater(WFHttpTask* t) {
+    auto counter_task = WFTaskFactory::create_counter_task(1, nullptr);
+    *series_of(t)  << counter_task;
+    return counter_task;
   }
 };
 
