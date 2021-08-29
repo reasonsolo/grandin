@@ -21,11 +21,10 @@
 namespace grd {
 namespace deepstream {
 
-using SrcStartCallback = std::function<void(bool)>;
-using SrcStopCallback = std::function<void(bool)>;
-
 using ::grd::gstpp::GstppApp;
 using ::grd::gstpp::GstppElement;
+using ::grd::gstpp::SrcStartCallback;
+using ::grd::gstpp::SrcStopCallback;
 
 class TestApp : public grd::gstpp::GstppApp {
  public:
@@ -44,12 +43,12 @@ class TestApp : public grd::gstpp::GstppApp {
   }
 
   void AddSource(const std::string& name, const std::string& uri,
-                 SrcStartCallback start_cb, SrcStopCallback stop_cb) {
+                 SrcStartCallback start_cb, SrcStopCallback stop_cb) override {
     gstpp::GstppApp::RunInLoop([=](gstpp::GstppApp* app) {
       this->AddSourceFromUri(name, uri, start_cb, stop_cb);
     });
   }
-  void RemoveSource(const std::string& name) {
+  void RemoveSource(const std::string& name) override {
     gstpp::GstppApp::RunInLoop(
         [=](gstpp::GstppApp* app) { this->RemoveSource(name); });
   }

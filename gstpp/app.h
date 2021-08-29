@@ -13,6 +13,8 @@ namespace gstpp {
 
 class GstppApp;
 using GstppAppFunctor = std::function<void(GstppApp*)>;
+using SrcStartCallback = std::function<void(bool)>;
+using SrcStopCallback = std::function<void(bool)>;
 
 class GstppApp {
  public:
@@ -60,6 +62,14 @@ class GstppApp {
     task->functor = std::move(functor);
     task->app = this;
     g_timeout_add(ms, &GstppApp::TimerCallback, task);
+  }
+
+  virtual void AddSource(const std::string& name, const std::string& uri,
+                         SrcStartCallback start_cb, SrcStopCallback stop_cb) {
+    LOG(FATAL) << "not implemented";
+  }
+  virtual void RemoveSource(const std::string& name) {
+    LOG(FATAL) << "not implemented";
   }
 
   GstppBus* bus() { return bus_; }
