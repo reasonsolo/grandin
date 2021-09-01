@@ -111,7 +111,12 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
   }
   int32_t slot_idx = available_sink_slots_.back();
   available_sink_slots_.pop_back();
-  auto srcbin = GstppElement::CreateSourceFromUri(name, uri);
+  GstppElement* srcbin = nullptr;
+  if (!uri.empty() && uri[0] == '/') {
+    srcbin = GstppElement::CreateSourceFromPath(name, uri);
+  } else {
+    srcbin = GstppElement::CreateSourceFromUri(name, uri);
+  }
   if (srcbin == nullptr) {
     LOG(INFO) << "cannot create srcbin for " << name;
     available_sink_slots_.push_back(slot_idx);

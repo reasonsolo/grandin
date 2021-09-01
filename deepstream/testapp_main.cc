@@ -14,6 +14,10 @@ DEFINE_string(
     "/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p_h264.mp4",
     "input stream");
 
+DEFINE_string(
+    src3,
+    "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm",
+    "input stream uri");
 int main(int argc, char** argv) {
   int32_t current_device = -1;
   cudaGetDevice(&current_device);
@@ -30,9 +34,9 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "event1";
   using namespace std::chrono_literals;
-  //app.AddSource("uribin", FLAGS_src2, 
-  //    []() { LOG(INFO) << "src2 added"; },
-  //    [](bool success) { LOG(INFO) << "src2 removed " << success; });
+  app.AddSource("uribin", FLAGS_src3, 
+      [](bool success) { LOG(INFO) << "src2 added" << success; },
+      [](bool success) { LOG(INFO) << "src2 removed " << success; });
 
   std::this_thread::sleep_for(1s);
   bool stop = false;

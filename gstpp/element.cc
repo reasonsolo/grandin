@@ -47,8 +47,10 @@ bool GstppElement::SetState(ElementState state) {
       return true;
     case GST_STATE_CHANGE_ASYNC:
       ret = gst_element_get_state(element(), NULL, NULL, GST_CLOCK_TIME_NONE);
+      LOG(INFO) << "change state async " << ret;
       return ret == GST_STATE_CHANGE_SUCCESS || ret == GST_STATE_CHANGE_NO_PREROLL;
     case GST_STATE_CHANGE_FAILURE:
+      LOG(INFO) << "change state failure";
       return false;
     default:
       LOG(INFO) << "unexpected state change result " << ret;
@@ -141,6 +143,15 @@ GstppElement* GstppElement::CreateSourceFromUri(const std::string& uid, const st
   LOG(INFO) << "create source element " << name << " from url " << uri;
   auto bin = new GstppElement("uridecodebin", name.c_str());
   bin->SetProperty("uri", uri);
+  return bin;
+}
+
+/* static */
+GstppElement* GstppElement::CreateSourceFromPath(const std::string& uid, const std::string& path) { 
+  std::string name = fmt::format("srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
+  LOG(INFO) << "create source element " << name << " from path " << path;
+  auto bin = new GstppElement("filesrc", name.c_str());
+  bin->SetProperty("location", path);
   return bin;
 }
 }
