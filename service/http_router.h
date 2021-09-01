@@ -19,7 +19,7 @@
 namespace grd {
 namespace service {
 
-using HttpHandler = std::function<void(WFHttpTask*, QueryMap*)>;
+using HttpHandler = std::function<void(WFHttpTask*, HttpRequestInfo*)>;
 
 // TODO: do real routing
 class HttpRouter {
@@ -38,22 +38,21 @@ class HttpRouter {
 
     std::string uri = req->get_request_uri();
 
-    std::string path;
-    QueryMap query_map;
+    HttpRequestInfo req_info;
 
-    HttpUtils::ParseUri(uri, &path, &query_map);
+    HttpUtils::ParseUri(uri, &req_info.path, &req_info.query_map);
 
     LOG(INFO) << "Route uri: " << uri;
     auto it = router_map_.find(uri);
     if (it == router_map_.end()) {
       Respond404(resp);
     } else {
-      if (AuthManager::GetInstance().Authorize(&query_map)) {
+      if (AuthManager::GetInstance().Authorize(&req_info.query_map)) {
         MONITOR_COUNTER("grandin.routed", 1);
-        LOG(INFO) << "user " << query_map["user"] << " authorized";
-        it->second(task, &query_map);
+        LOG(INFO) << "user " << req_info.query_map["user"] << " authorized";
+        it->second(task, &req_info);
       } else {
-        LOG(WARNING) << "user " << query_map["user"] << " failed authorization";
+        LOG(WARNING) << "user " << req_info.query_map["user"] << " failed authorization";
         Respond403(resp);
       }
     }

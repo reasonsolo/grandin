@@ -10,9 +10,10 @@ namespace service {
 
 void VideoManager::Init() {}
 
-void VideoManager::ProcessNewVideoReq(WFHttpTask* t, QueryMap* qmap) {
+void VideoManager::ProcessNewVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) {
   MONITOR_COUNTER("video.new_qps", 1);
-  std::string app_name = qmap->count(kAppParam) > 0 ? (*qmap)[kAppParam] : kDefaultApp;
+  auto&& qmap = req_info->query_map;
+  std::string app_name = qmap.count(kAppParam) > 0 ? qmap[kAppParam] : kDefaultApp;
   auto app = AppManager::GetInstance().GetApp(app_name);
   if (app == nullptr) {
     json::json resp;
@@ -66,8 +67,9 @@ void VideoManager::ProcessNewVideoReq(WFHttpTask* t, QueryMap* qmap) {
   HttpUtils::RespondJson(t, json_resp);
 }
 
-void VideoManager::ProcessQueryVideoReq(WFHttpTask* t, QueryMap* qmap) {
-  std::string uid = (*qmap)["id"];
+void VideoManager::ProcessQueryVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) {
+  auto& qmap = req_info->query_map;
+  std::string& uid = qmap["id"];
   json::json json_resp;
   json::json data;
   json_resp["code"] = 0;
@@ -85,7 +87,7 @@ void VideoManager::ProcessQueryVideoReq(WFHttpTask* t, QueryMap* qmap) {
   HttpUtils::RespondJson(t, json_resp);
 }
 
-void VideoManager::ProcessDelVideoReq(WFHttpTask* t, QueryMap* qmap) {
+void VideoManager::ProcessDelVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) {
   MONITOR_COUNTER("video.del_qps", 1);
   json::json json_resp;
   json_resp["code"] = 0;
@@ -93,11 +95,11 @@ void VideoManager::ProcessDelVideoReq(WFHttpTask* t, QueryMap* qmap) {
 }
 
 /* static */
-VideoInput* VideoManager::CreateVideoInput(QueryMap* qmap) {
+VideoInput* VideoManager::CreateVideoInput(QueryMap& qmap) {
     auto video_input = new VideoInput;
     video_input->uid = UniqueIdUtils::GenUniqueId();
-    video_input->uri = (*qmap)[kUri];
-    video_input->user = (*qmap)[kUser];
+    video_input->uri = qmap[kUri];
+    video_input->user = qmap[kUser];
     return video_input;
 }
 

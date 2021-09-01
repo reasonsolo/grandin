@@ -50,17 +50,16 @@ class VideoManager {
   ~VideoManager() = default;
 
   void Init();
-  void ProcessNewVideoReq(WFHttpTask* t, QueryMap* query_map);
-  void ProcessQueryVideoReq(WFHttpTask* t, QueryMap* query_map);
-  void ProcessDelVideoReq(WFHttpTask* t, QueryMap* query_map);
+  void ProcessNewVideoReq(WFHttpTask* t, HttpRequestInfo* req_info);
+  void ProcessQueryVideoReq(WFHttpTask* t, HttpRequestInfo* req_info);
+  void ProcessDelVideoReq(WFHttpTask* t, HttpRequestInfo* req_info);
 
-  std::tuple<VideoStatus, std::string> AddVideoInput(std::string uri,
-                                                     std::string app_name);
+  std::tuple<VideoStatus, std::string> AddVideoInput(std::string uri, std::string app_name);
   VideoStatus QueryVideoInput(const std::string& uid);
 
  private:
 
-  static VideoInput* CreateVideoInput(QueryMap* qmap);
+  static VideoInput* CreateVideoInput(QueryMap& qmap);
   void RespondError(WFHttpTask* t, const RespCode code, const std::string& msg);
 
   Mutex mtx_;

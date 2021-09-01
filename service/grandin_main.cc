@@ -2,6 +2,7 @@
 
 #include <gflags/gflags.h>
 
+#include "common/utils.h"
 #include "service/http_router.h"
 #include "service/auth_manager.h"
 #include "service/app_manager.h"
@@ -14,7 +15,7 @@
 
 DEFINE_int32(port, 8001, "port");
 
-using grd::QueryMap;
+using grd::HttpRequestInfo;
 using grd::service::HttpRouter;
 using grd::service::AuthManager;
 using grd::service::AppManager;
@@ -30,14 +31,14 @@ int main(int argc, char** argv) {
 
   // init routings
   HttpRouter router;
-  router.Route("/video/new", [](WFHttpTask* t, QueryMap* query_map) {
-      return VideoManager::GetInstance().ProcessNewVideoReq(t, query_map);
+  router.Route("/video/new", [](WFHttpTask* t, HttpRequestInfo* req_info) {
+      return VideoManager::GetInstance().ProcessNewVideoReq(t, req_info);
   });
-  router.Route("/video/query", [](WFHttpTask* t, QueryMap* query_map) {
-      return VideoManager::GetInstance().ProcessQueryVideoReq(t, query_map);
+  router.Route("/video/query", [](WFHttpTask* t, HttpRequestInfo* req_info) {
+      return VideoManager::GetInstance().ProcessQueryVideoReq(t, req_info);
   });
-  router.Route("/video/del", [](WFHttpTask* t, QueryMap* query_map) {
-      return VideoManager::GetInstance().ProcessDelVideoReq(t, query_map);
+  router.Route("/video/del", [](WFHttpTask* t, HttpRequestInfo* req_info) {
+      return VideoManager::GetInstance().ProcessDelVideoReq(t, req_info);
   });
 
   // start serving

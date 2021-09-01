@@ -138,9 +138,41 @@ class CryptoUtils {
 };
 
 using QueryMap = std::unordered_map<std::string, std::string>;
+struct HttpRequestInfo {
+  std::string path;
+  QueryMap query_map;
+};
+
 namespace json = nlohmann;
 class HttpUtils {
  public:
+  static char FromHex(char ch) {
+    return std::isdigit(ch) ? ch - '0' : std::tolower(ch) - 'a' + 10;
+}
+
+static std::string UrlDecode(const std::string& text) {
+  char h;
+  std::ostringstream escaped;
+  escaped.fill('0');
+
+  for (auto i = text.begin(), n = text.end(); i != n; ++i) {
+    std::string::value_type c = (*i);
+    if (c == '%') {
+      if (i[1] && i[2]) {
+        h = FromHex(i[1]) << 4 | FromHex(i[2]);
+        escaped << h;
+        i += 2;
+      }
+    } else if (c == '+') {
+      escaped << ' ';
+    } else {
+      escaped << c;
+    }
+  }
+
+  return escaped.str();
+}
+
   static bool ParseUri(const std::string& uri, std::string* path, QueryMap* qmap) {
     auto path_begin = uri.find('/');
     auto param_begin = uri.find('?');
@@ -151,7 +183,7 @@ class HttpUtils {
       for (auto&& seg : param_segs) {
         auto kv = StringUtils::Split(seg, '=');
         if (kv.size() == 2) {
-          (*qmap)[kv[0]] = kv[1];
+          (*qmap)[kv[0]] = UrlDecode(kv[1]);
         } else if (kv.size() == 1) {
           (*qmap)[kv[0]] = "";
         }
