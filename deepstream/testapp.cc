@@ -49,13 +49,13 @@ TestApp::TestApp()
 void TestApp::InitBus() {
   bus_->SetTypedMessageCallback(MessageType::EOS,
                                  [this](GstppBus* bus, GstppMessage* msg) {
-                                   LOG(INFO) << "EOS, quit loop";
-                                   this->main_loop_.Quit();
+                                   LOG(INFO) << "get EOS, keep looping";
+                                   //this->main_loop_.Quit();
                                  });
   bus_->SetTypedMessageCallback(
       MessageType::ERROR, [this](GstppBus* bus, GstppMessage* msg) {
         LOG(ERROR) << "got error: " << msg->AsError();
-        this->main_loop_.Quit();
+        // this->main_loop_.Quit();
       });
   bus_->SetTypedMessageCallback(
       MessageType::APPLICATION, [](GstppBus* bus, GstppMessage* msg) {
@@ -104,6 +104,7 @@ void TestApp::InitPipeline() {
 bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
                                SrcStartCallback start_cb,
                                SrcStopCallback stop_cb) {
+  LOG(INFO) << "add source in loop " << uri;
   if (available_sink_slots_.empty()) { 
     LOG(INFO) << "no available input slot for " << name;
     if (start_cb) start_cb(false);
@@ -126,11 +127,12 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
   if (dynamic_source_list_[slot_idx].srcbin) {
     delete dynamic_source_list_[slot_idx].srcbin;
   }
+  dynamic_source_name_idx_map_[name] = slot_idx;
   dynamic_source_list_[slot_idx] =
       DynamicSource{srcbin, slot_idx, source_count_++, std::move(start_cb),
                     std::move(stop_cb), TimeUtils::NowUs()};
 
-  srcbin->SetNewPadCallback([start_cb, slot_idx, srcbin, this](GstppPad* pad) {
+  srcbin->SetNewPadCallback([start_cb, name, slot_idx, srcbin, this](GstppPad* pad) {
     GstCaps* caps = gst_pad_query_caps(pad->pad(), NULL);
     const GstStructure* structure = gst_caps_get_structure(caps, 0);
     const gchar* name = gst_structure_get_name(structure);
@@ -138,6 +140,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
     LOG(INFO) << "srbin " << srcbin->name() << " add new pad " << name;
     if (strncmp(name, "video", 5) == 0) {
       std::string pad_name = fmt::format("sink_{}", slot_idx);
+      LOG(INFO) << "get pad name " << pad_name;
       auto&& sink_pad = this->streammux_.GetRequestPad(pad_name);
       if (pad->LinkTo(*sink_pad)) {
         LOG(INFO) << "link srcbin " << srcbin->name() << " to pipeline";
@@ -149,7 +152,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
         }
       } else {
         LOG(INFO) << "cannot link srcbin " << srcbin->name() << " to pipeline";
-        this->RemoveSourceByIdx(slot_idx);
+        this->RemoveSourceByName(name);
       }
       delete sink_pad;
       return;
@@ -206,7 +209,7 @@ bool TestApp::RemoveSourceByIdx(const int32_t slot_idx) {
     return false;
   }
   std::string pad_name = fmt::format("sink_{}", slot_idx);
-  auto&& sinkpad = streammux_.GetRequestPad(pad_name);
+  auto&& sinkpad = streammux_.GetStaticPad(pad_name);
   auto gst_pad = sinkpad->pad();
   gst_pad_send_event(gst_pad, gst_event_new_flush_stop(false));
   gst_element_release_request_pad(streammux_.element(), gst_pad);

@@ -14,6 +14,7 @@ extern const std::string kNonce;
 extern const std::string kUser;
 extern const std::string kTimestamp;
 extern const std::string kSha1;
+extern const std::string kAuthToken;
 
 }  // namespace service
 }  // namespace grd

@@ -7,6 +7,7 @@
 #include "service/auth_manager.h"
 #include "service/app_manager.h"
 #include "service/video_manager.h"
+#include "deepstream/testapp.h"
 
 #include "workflow/HttpMessage.h"
 #include "workflow/WFFacilities.h"
@@ -22,6 +23,13 @@ using grd::service::AppManager;
 using grd::service::VideoManager;
 
 int main(int argc, char** argv) {
+  int32_t current_device = -1;
+  cudaGetDevice(&current_device);
+  struct cudaDeviceProp prop;
+ 
+  cudaGetDeviceProperties(&prop, current_device);
+  gtk_init(&argc, &argv);
+  gst_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, false);
 
   // init modules

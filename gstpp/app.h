@@ -26,6 +26,7 @@ class GstppApp {
         pipeline_(new GstppPipeline(name_ + "-pipeline")),
         bus_(pipeline_->bus()) {}
   virtual ~GstppApp() {
+    LOG(INFO) << "app exit "  << name_;
     pipeline_->Reset();
     delete pipeline_;
   }
@@ -71,8 +72,13 @@ class GstppApp {
                          SrcStartCallback start_cb, SrcStopCallback stop_cb) {
     LOG(FATAL) << "not implemented";
   }
-  virtual void RemoveSource(const std::string& name) {
+  virtual void RemoveSource(const std::string& name, SrcStopCallback stop_cb) {
     LOG(FATAL) << "not implemented";
+  }
+  virtual void RemoveSourceWithTimeout(const std::string& name, SrcStopCallback stop_cb, int32_t timeout_ms) {
+    RunInMs([stop_cb=std::move(stop_cb), name=name, this](GstppApp* app) {
+      this->RemoveSource(name, stop_cb);
+    }, timeout_ms);
   }
 
   GstppBus* bus() { return bus_; }
@@ -82,11 +88,12 @@ class GstppApp {
 
   static gboolean TimerCallback(gpointer data) {
     auto task = reinterpret_cast<TimerTask*>(data);
+    LOG(INFO) << "run timer callback " << (void*)task;
     if (task && task->functor) {
       task->functor(task->app);
       delete task;
     }
-    return true;
+    return false; // return false to prevent repeative timer
   }
 
   struct TimerTask {

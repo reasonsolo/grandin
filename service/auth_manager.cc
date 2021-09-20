@@ -11,6 +11,7 @@
 #include "vendor/fmt/include/fmt/format.h"
 
 DEFINE_string(appid_file, "appid.txt", "appid file path");
+DEFINE_string(auth_token, "zlz", "auth_token");
 
 namespace grd {
 namespace service {
@@ -50,6 +51,10 @@ bool AuthManager::Authorize(const std::string& nonce,
 
 bool AuthManager::Authorize(QueryMap* qmap) {
   QueryMap& query_map = *qmap;
+  if (query_map[kAuthToken] == FLAGS_auth_token) {
+    return true;
+  }
+
   if (!Authorize(query_map[kNonce], query_map[kTimestamp], query_map[kUser],
                  query_map[kSha1])) {
     return false;

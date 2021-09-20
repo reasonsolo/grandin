@@ -4,6 +4,9 @@
 #include "gstpp/app.h"
 #include "common/monitor.h"
 #include "service/uri_params.h"
+#include <gflags/gflags.h>
+
+DEFINE_int32(max_src_ms, 3 * 1000, "max real-world microseconds that a source can stay in pipleline");
 
 namespace grd {
 namespace service {
@@ -22,11 +25,12 @@ void VideoManager::ProcessNewVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) 
     return HttpUtils::RespondJson(t, resp);
   } else {
     VideoInput* input = CreateVideoInput(qmap);
+    LOG(INFO) << "video input created";
     {
       Lock lock(mtx_);
       video_map_[input->uid] = input;
     }
-    auto respond_later = HttpUtils::RespondLater(t);
+    auto respond_later = HttpUtils::RespondLater(t, input->uid);
     app->AddSource(
         input->uid, input->uri,
         /* start callback =  */
@@ -39,6 +43,7 @@ void VideoManager::ProcessNewVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) 
             input->status = VideoStatus::ERROR;
             input->error_msg = "error on start";
           }
+          LOG(INFO) << "add source " << input->uri << " " << success;
           json::json resp;
           json::json data;
           data["id"] = input->uid;
@@ -46,25 +51,33 @@ void VideoManager::ProcessNewVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) 
           resp["msg"] = input->error_msg;
           resp["data"] = data;
           HttpUtils::RespondJson(t, resp);
-          respond_later->count();
+          WFTaskFactory::count_by_name(input->uid);
         },
         /* stop callback = */
         [input, t, respond_later, this](bool success) {
-            if (success) {
-              MONITOR_COUNTER(
-                  std::format("video.{}.finish_success", input->app_name), 1);
-              input->status = VideoStatus::STOPPED;
-            } else {
-              MONITOR_COUNTER(
-                  std::format("video.{}.finish_erro", input->app_name), 1);
-              input->status = VideoStatus::ERROR;
-              input->error_msg = "error on finish";
-            }
+          if (success) {
+            MONITOR_COUNTER(
+                std::format("video.{}.finish_success", input->app_name), 1);
+            input->status = VideoStatus::STOPPED;
+          } else {
+            MONITOR_COUNTER(
+                std::format("video.{}.finish_erro", input->app_name), 1);
+            input->status = VideoStatus::ERROR;
+            input->error_msg = "error on finish";
+          }
         });
+    app->RemoveSourceWithTimeout(
+        input->uid,
+        [input](bool success) {
+          LOG(INFO) << input->uid << " was removed from pipeline, ret " << success;
+          input->status = success ? VideoStatus::STOPPED : VideoStatus::ERROR;
+        },
+        FLAGS_max_src_ms);
+    //json::json resp;
+    //resp["code"] = VideoStatus::INPROGRESS;
+    //resp["id"] = input->uid;
+    //HttpUtils::TimedRespond(t, 1000 * 5, resp, input->uid);
   }
-  json::json json_resp;
-  json_resp["code"] = 0;
-  HttpUtils::RespondJson(t, json_resp);
 }
 
 void VideoManager::ProcessQueryVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) {
@@ -96,11 +109,11 @@ void VideoManager::ProcessDelVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) 
 
 /* static */
 VideoInput* VideoManager::CreateVideoInput(QueryMap& qmap) {
-    auto video_input = new VideoInput;
-    video_input->uid = UniqueIdUtils::GenUniqueId();
-    video_input->uri = qmap[kUri];
-    video_input->user = qmap[kUser];
-    return video_input;
+  auto video_input = new VideoInput;
+  video_input->uid = UniqueIdUtils::GenUniqueId();
+  video_input->uri = qmap[kUri];
+  video_input->user = qmap[kUser];
+  return video_input;
 }
 
 }  // namespace service

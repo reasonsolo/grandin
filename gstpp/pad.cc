@@ -74,9 +74,11 @@ std::vector<GstppPad*> GstppPad::GetAllPads(GstppElement* element) {
 
 /* static */
 GstPadProbeReturn GstppPad::ProbeCallback(GstPad* gst_pad, GstPadProbeInfo* info, gpointer entry_ptr) {
-    CbEntry* entry = reinterpret_cast<CbEntry*>(entry_ptr);
-    CHECK(entry && entry->pad && entry->cb);
+  CbEntry* entry = reinterpret_cast<CbEntry*>(entry_ptr);
+  if (entry && entry->pad && entry->cb) {
     return entry->cb(entry->pad, info);
+  }
+  return GstPadProbeReturn::GST_PAD_PROBE_DROP;
 }
 
 bool GstppPad::LinkTo(GstppPad& downstream) {

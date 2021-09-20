@@ -43,7 +43,7 @@ class HttpRouter {
     HttpUtils::ParseUri(uri, &req_info.path, &req_info.query_map);
 
     LOG(INFO) << "Route uri: " << uri;
-    auto it = router_map_.find(uri);
+    auto it = router_map_.find(req_info.path);
     if (it == router_map_.end()) {
       Respond404(resp);
     } else {

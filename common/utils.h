@@ -200,10 +200,24 @@ static std::string UrlDecode(const std::string& text) {
     resp->append_output_body(static_cast<const void*>(body.data()), body.size());
   }
 
-  static WFCounterTask* RespondLater(WFHttpTask* t) {
-    auto counter_task = WFTaskFactory::create_counter_task(1, nullptr);
-    *series_of(t)  << counter_task;
+  static WFCounterTask* RespondLater(WFHttpTask* t, const std::string& counter_name) {
+    WFCounterTask* counter_task = nullptr;
+    if (counter_name.empty()) {
+      counter_task = WFTaskFactory::create_counter_task(1, nullptr);
+    } else {
+      counter_task = WFTaskFactory::create_counter_task(counter_name, 1, nullptr);
+    }
+    *series_of(t) << counter_task;
     return counter_task;
+  }
+
+  static WFTimerTask* TimedRespond(WFHttpTask* t, int32_t ms, json::json resp_json, const std::string& counter_name) {
+    auto timer_task = WFTaskFactory::create_timer_task(ms, [t, resp_json=std::move(resp_json), counter_name](WFTimerTask* timer_task) {
+      RespondJson(t, resp_json);
+      WFTaskFactory::count_by_name(counter_name);
+    });
+    *series_of(t)  << timer_task;
+    return timer_task;
   }
 };
 

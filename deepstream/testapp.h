@@ -45,13 +45,16 @@ class TestApp : public grd::gstpp::GstppApp {
 
   void AddSource(const std::string& name, const std::string& uri,
                  SrcStartCallback start_cb, SrcStopCallback stop_cb) override {
+    LOG(INFO) << "add source " << uri;
     gstpp::GstppApp::RunInLoop([=](gstpp::GstppApp* app) {
       this->AddSourceFromUri(name, uri, start_cb, stop_cb);
     });
   }
-  void RemoveSource(const std::string& name) override {
-    gstpp::GstppApp::RunInLoop(
-        [=](gstpp::GstppApp* app) { this->RemoveSource(name); });
+  void RemoveSource(const std::string& name, SrcStopCallback stop_cb) override {
+    gstpp::GstppApp::RunInLoop([=](gstpp::GstppApp* app) {
+      bool ret = this->RemoveSourceByName(name);
+      if (stop_cb) stop_cb(ret);
+    });
   }
 
  private:

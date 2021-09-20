@@ -14,6 +14,7 @@ const std::string kNonce = "nonce";
 const std::string kUser = "user";
 const std::string kTimestamp = "timestamp";
 const std::string kSha1 = "sha1";
+const std::string kAuthToken = "token";
 
 }  // namespace service
 }  // namespace grd

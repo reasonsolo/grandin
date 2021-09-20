@@ -14,4 +14,4 @@ add_executable(grandin
  app_manager.cc
  uri_params.cc
 )
-target_link_libraries(grandin fmt gflags glog workflow pthread ssl crypto rt)
+target_link_libraries(grandin testapp fmt gflags glog workflow pthread ssl crypto rt)

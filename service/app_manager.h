@@ -6,6 +6,7 @@
 #include <string>
 
 #include "common/macros.h"
+#include "service/uri_params.h"
 
 namespace grd {
 namespace gstpp {
@@ -18,9 +19,14 @@ class AppManager {
  public:
   ~AppManager() = default;
 
-  void Init() {}
+  void Init();
 
-  gstpp::GstppApp* GetApp(const std::string& name) { return nullptr; }
+  gstpp::GstppApp* GetApp(const std::string& name) { 
+    if (name == kDefaultApp) {
+      return app_map_.begin()->second;
+    }
+    return app_map_[name];
+  }
 
  private:
   std::map<std::string, gstpp::GstppApp*> app_map_;
