@@ -139,7 +139,7 @@ void GstppElement::OnChildAdded(GstChildProxy* child_proxy, GObject* obj, gchar*
 
 /* static */
 GstppElement* GstppElement::CreateSourceFromUri(const std::string& uid, const std::string& uri) { 
-  std::string name = fmt::format("srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
+  std::string name = fmt::format("uri_srcbin:{}", uid);
   LOG(INFO) << "create source element " << name << " from url " << uri;
   auto bin = new GstppElement("uridecodebin", name.c_str());
   bin->SetProperty("uri", uri);
@@ -148,9 +148,18 @@ GstppElement* GstppElement::CreateSourceFromUri(const std::string& uid, const st
 
 /* static */
 GstppElement* GstppElement::CreateSourceFromPath(const std::string& uid, const std::string& path) { 
-  std::string name = fmt::format("srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
+  std::string name = fmt::format("file_srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
   LOG(INFO) << "create source element " << name << " from path " << path;
   auto bin = new GstppElement("filesrc", name.c_str());
+  bin->SetProperty("location", path);
+  return bin;
+}
+
+/* static */
+GstppElement* GstppElement::CreateSourceFromRtsp(const std::string& uid, const std::string& path) {
+  std::string name = fmt::format("rtsp_srcbin:{}", uid.size() > 8u ? uid.substr(uid.size() - 8) : uid);
+  LOG(INFO) << "create source element " << name << " from path " << path;
+  auto bin = new GstppElement("rtspsrc", name.c_str());
   bin->SetProperty("location", path);
   return bin;
 }

@@ -33,6 +33,7 @@ class GstppMessage {
   MessageType type() const { return type_; }
   GstMessage* msg() const { return msg_; }
   std::any& data() { return data_; }
+  bool HasName(const std::string& name);
 
   bool IsVideoOverlayPrepareWindowHandlerMessage() const {
     return gst_is_video_overlay_prepare_window_handle_message(msg_);

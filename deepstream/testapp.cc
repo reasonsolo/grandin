@@ -67,6 +67,12 @@ void TestApp::InitBus() {
                      << " type " << msg->data().type().name();
         }
       });
+  bus_->SetTypedMessageCallback(
+      MessageType::ELEMENT, [](GstppBus* bus, GstppMessage* msg) {
+        if (msg->HasName("GstRTSPSrcTimeout")) {
+          LOG(INFO) << "gstpp rtsp src timeout";
+        }
+      });
   bus_->AddWatch();
 }
 
@@ -105,27 +111,32 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
                                SrcStartCallback start_cb,
                                SrcStopCallback stop_cb) {
   LOG(INFO) << "add source in loop " << uri;
-  if (available_sink_slots_.empty()) { 
-    LOG(INFO) << "no available input slot for " << name;
-    if (start_cb) start_cb(false);
-    return false;
+  int32_t slot_idx = -1;
+  {
+    Lock lock(mtx_);
+    if (available_sink_slots_.empty()) {
+      LOG(INFO) << "no available input slot for " << name;
+      if (start_cb) start_cb(false);
+      return false;
+    }
+    slot_idx = available_sink_slots_.back();
+    available_sink_slots_.pop_back();
   }
-  int32_t slot_idx = available_sink_slots_.back();
-  available_sink_slots_.pop_back();
   GstppElement* srcbin = nullptr;
   if (!uri.empty() && uri[0] == '/') {
     srcbin = GstppElement::CreateSourceFromPath(name, uri);
+  } else if (uri.substr(0, 4) == "rtsp") {
   } else {
     srcbin = GstppElement::CreateSourceFromUri(name, uri);
   }
   if (srcbin == nullptr) {
     LOG(INFO) << "cannot create srcbin for " << name;
-    available_sink_slots_.push_back(slot_idx);
+    {
+      Lock lock(mtx_);
+      available_sink_slots_.push_back(slot_idx);
+    }
     if (start_cb) start_cb(false);
     return false;
-  }
-  if (dynamic_source_list_[slot_idx].srcbin) {
-    delete dynamic_source_list_[slot_idx].srcbin;
   }
   dynamic_source_name_idx_map_[name] = slot_idx;
   dynamic_source_list_[slot_idx] =
@@ -178,6 +189,7 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
 
   if (!srcbin->Play()) {
     LOG(ERROR) << "cannot play dynamic srbin " << name;
+    Lock lock(mtx_);
     available_sink_slots_.push_back(slot_idx);
     return false;
   }
@@ -215,7 +227,16 @@ bool TestApp::RemoveSourceByIdx(const int32_t slot_idx) {
   gst_element_release_request_pad(streammux_.element(), gst_pad);
   delete sinkpad;
   pipeline_->RemoveElement(*srcbin);
-  available_sink_slots_.push_back(slot_idx);
+  { 
+    Lock lock(mtx_);
+    available_sink_slots_.push_back(slot_idx);
+  }
+  if (dynamic_source_list_[slot_idx].srcbin) {
+    LOG(INFO) << "delete dynamic src " << slot_idx;
+    delete dynamic_source_list_[slot_idx].srcbin;
+    dynamic_source_list_[slot_idx].srcbin = nullptr;
+    LOG(INFO) << "after delete dynamic src " << slot_idx;
+  }
   return true;
 }
 

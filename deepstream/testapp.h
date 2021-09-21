@@ -84,7 +84,8 @@ class TestApp : public grd::gstpp::GstppApp {
     SrcStopCallback stop_cb;
     int64_t create_timestamp;
   };
-
+ 
+  Mutex mtx_;
   std::deque<int32_t> available_sink_slots_;
   std::atomic<int64_t> source_count_{0};
   std::vector<DynamicSource> dynamic_source_list_;

@@ -39,5 +39,9 @@ int32_t GstppMessage::AsBufferingPercent() {
   return percent;
 }
 
+bool GstppMessage::HasName(const std::string& name) {
+  return gst_message_has_name(msg_, name.c_str());
+}
+
 }  // namespace gstpp
 }  // namespace grd

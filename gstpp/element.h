@@ -97,6 +97,7 @@ class GstppElement {
   static GstppElement* Create(const std::string& type, const std::string& name);
   static GstppElement* CreateSourceFromUri(const std::string& name, const std::string& uri);
   static GstppElement* CreateSourceFromPath(const std::string& name, const std::string& path);
+  static GstppElement* CreateSourceFromRtsp(const std::string& name, const std::string& uri);
 
  protected:
 

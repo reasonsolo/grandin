@@ -4,6 +4,7 @@ add_library(gstpp
   message.cc
   pad.cc
   bus.cc
+  recorder.cc
 )
 target_link_libraries(gstpp PUBLIC
   ${GLIB_LIBRARIES}
