@@ -18,6 +18,9 @@
 #include "gstpp/gtk_player.h"
 #include "gstpp/main_loop.h"
 #include "gstpp/pad.h"
+#include "common/utils.h"
+
+#include "deepstream/dynamic_sink.h"
 
 namespace grd {
 namespace deepstream {
@@ -57,6 +60,8 @@ class TestApp : public grd::gstpp::GstppApp {
     });
   }
 
+  GstppElement* output_tee() override { return &tee_; }
+
  private:
   bool AddSourceFromUri(const std::string& name, const std::string& uri,
                         SrcStartCallback start_cb, SrcStopCallback stop_cb);
@@ -72,6 +77,7 @@ class TestApp : public grd::gstpp::GstppApp {
   GstppElement decoder_;
   GstppElement streammux_;
   GstppElement pgie_;
+  GstppElement tee_;
   GstppElement nvvidconv_;
   GstppElement nvosd_;
   GstppElement sink_;
@@ -90,6 +96,8 @@ class TestApp : public grd::gstpp::GstppApp {
   std::atomic<int64_t> source_count_{0};
   std::vector<DynamicSource> dynamic_source_list_;
   std::unordered_map<std::string, int32_t> dynamic_source_name_idx_map_;
+
+  DynamicSink* dyn_sink_ = nullptr; 
 };
 
 }  // namespace deepstream

@@ -83,6 +83,7 @@ class GstppApp {
 
   GstppBus* bus() { return bus_; }
   GstppPipeline* pipeline() { return pipeline_; }
+  virtual GstppElement* output_tee() { return nullptr; }
 
  protected:
 

@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "event1";
   using namespace std::chrono_literals;
-  app.AddSource("uribin", FLAGS_src3, 
+  app.AddSource("zlz/uribin", FLAGS_src3, 
       [](bool success) { LOG(INFO) << "src2 added" << success; },
       [](bool success) { LOG(INFO) << "src2 removed " << success; });
 

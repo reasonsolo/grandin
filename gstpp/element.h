@@ -54,6 +54,7 @@ class GstppElement {
   bool Ready() { return SetState(ElementState::READY); }
   bool Play()  { return SetState(ElementState::PLAYING); }
   bool Pause() { return SetState(ElementState::PAUSED); }
+  bool SyncStateWithParent();
 
   ElementState GetState();
 

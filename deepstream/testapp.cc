@@ -37,11 +37,12 @@ TestApp::TestApp()
       decoder_("nvv4l2decoder", "nvv4l2-decoder"),
       streammux_("nvstreammux", "stream-muxer"),
       pgie_("nvinfer", "primary-nvinference-engine"),
+      tee_("tee", "output_tee"),
       nvvidconv_("nvvideoconvert", "nvvideo-converter"),
       nvosd_("nvdsosd", "nv-onscreendisplay"),
       sink_("nveglglessink", "nvvideo-renderer") {
   dynamic_source_list_.resize(FLAGS_testapp_max_input);
-  for (int32_t i = 0; i < FLAGS_testapp_max_input; i++) {
+  for (int32_t i = FLAGS_testapp_max_input - 1; i >= 0 ; i--) {
     available_sink_slots_.push_back(i);
   }
 }
@@ -94,10 +95,20 @@ void TestApp::InitPipeline() {
   //delete src_pad;
   //delete sink_pad;
 
-  pipeline_->Add(source_, h264parser_, decoder_, streammux_, pgie_, nvvidconv_, nvosd_, sink_);
+  pipeline_->Add(source_, h264parser_, decoder_, streammux_, pgie_, tee_, nvvidconv_, nvosd_, sink_);
 
   source_ --> h264parser_ --> decoder_;
-  streammux_ --> pgie_ --> nvvidconv_ --> nvosd_ --> sink_;
+  streammux_ --> pgie_ --> tee_;
+  nvvidconv_ --> nvosd_;
+  // nvosd_ --> sink_;
+
+  GstPadTemplate* pad_templ = gst_element_class_get_pad_template(GST_ELEMENT_GET_CLASS(tee_.element()), "src_%u");
+  auto tee_pad = new GstppPad(gst_element_request_pad(tee_.element(), pad_templ, nullptr, nullptr));
+  auto conv_pad = nvvidconv_.GetStaticPad("sink");
+  (*tee_pad) --> (*conv_pad);
+
+  delete tee_pad;
+  delete conv_pad;
 
   GstppPad osd_sink_pad(&nvosd_, "sink");
   osd_sink_pad.AddProbeCallback(
@@ -105,6 +116,7 @@ void TestApp::InitPipeline() {
         return OsdSinkPadBufferProbe(pad, info, &(this->frame_number_));
       });
 
+  dyn_sink_ = new DynamicSink(this, FLAGS_testapp_max_input);
 }
 
 bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
@@ -139,11 +151,19 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
     return false;
   }
   dynamic_source_name_idx_map_[name] = slot_idx;
-  dynamic_source_list_[slot_idx] =
-      DynamicSource{srcbin, slot_idx, source_count_++, std::move(start_cb),
-                    std::move(stop_cb), TimeUtils::NowUs()};
+  dynamic_source_list_[slot_idx] = DynamicSource{srcbin,
+                                                 slot_idx,
+                                                 source_count_++,
+                                                 std::move(start_cb),
+                                                 std::move(stop_cb),
+                                                 TimeUtils::NowUs()};
 
-  srcbin->SetNewPadCallback([start_cb, name, slot_idx, srcbin, this](GstppPad* pad) {
+  auto user_uid = StringUtils::Split(name, '/');
+  CHECK(user_uid.size() == 2) << "invalid user_uid name " << name;
+  dyn_sink_->SaveBranch(slot_idx, user_uid[0], user_uid[1],
+                        FLAGS_testapp_max_video_len_sec * 1000);
+  srcbin->SetNewPadCallback([start_cb, name, slot_idx, srcbin,
+                             this](GstppPad* pad) {
     GstCaps* caps = gst_pad_query_caps(pad->pad(), NULL);
     const GstStructure* structure = gst_caps_get_structure(caps, 0);
     const gchar* name = gst_structure_get_name(structure);
@@ -157,7 +177,8 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
         LOG(INFO) << "link srcbin " << srcbin->name() << " to pipeline";
         auto&& start_cb = this->dynamic_source_list_[slot_idx].start_cb;
         CHECK(srcbin == this->dynamic_source_list_[slot_idx].srcbin)
-        << "srcbin " << (void*)srcbin << " listbin " << slot_idx << ": " << this->dynamic_source_list_[slot_idx].srcbin;
+            << "srcbin " << (void*)srcbin << " listbin " << slot_idx << ": "
+            << this->dynamic_source_list_[slot_idx].srcbin;
         if (start_cb) {
           start_cb(true);
         }
@@ -173,17 +194,18 @@ bool TestApp::AddSourceFromUri(const std::string& name, const std::string& uri,
     }
   });
 
-  srcbin->SetNewChildCallback(
-      [slot_idx, srcbin, this](GstChildProxy* proxy, GObject* obj, gchar* name) {
-        LOG(INFO) << "srcbin child added " << name;
-        if (g_strrstr(name, "decodebin") == name) {
-          LOG(INFO) << "decodebin child callback";
-        }
-        if (g_strrstr(name, "nvv4l2decoder") == name) {
-          LOG(INFO) << "nvv4ldecoder child callback";
-          g_object_set(obj, "gpu-id", FLAGS_testapp_gpu_id, nullptr);
-        }
-      });
+  srcbin->SetNewChildCallback([slot_idx, srcbin, this](GstChildProxy* proxy,
+                                                       GObject* obj,
+                                                       gchar* name) {
+    LOG(INFO) << "srcbin child added " << name;
+    if (g_strrstr(name, "decodebin") == name) {
+      LOG(INFO) << "decodebin child callback";
+    }
+    if (g_strrstr(name, "nvv4l2decoder") == name) {
+      LOG(INFO) << "nvv4ldecoder child callback";
+      g_object_set(obj, "gpu-id", FLAGS_testapp_gpu_id, nullptr);
+    }
+  });
 
   pipeline_->Add(*srcbin);
 
@@ -227,6 +249,7 @@ bool TestApp::RemoveSourceByIdx(const int32_t slot_idx) {
   gst_element_release_request_pad(streammux_.element(), gst_pad);
   delete sinkpad;
   pipeline_->RemoveElement(*srcbin);
+  dyn_sink_->StopSaveBranch(slot_idx);
   { 
     Lock lock(mtx_);
     available_sink_slots_.push_back(slot_idx);

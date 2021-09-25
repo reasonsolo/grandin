@@ -60,6 +60,7 @@ class GstppPad {
 
   GstPad* pad() const { return pad_; }
   bool LinkTo(GstppPad& downstream);
+  bool UnlinkTo(GstppPad& downstream);
   void AddProbeCallback(PadProbeType type, GstppPadProbeCallback cb);
 
   static std::vector<GstppPad*> GetAllPads(GstppElement* element);
@@ -70,6 +71,10 @@ class GstppPad {
   GstppPad& operator--() { return *this; }
   GstppPad& operator>(GstppPad& rhs) {
     this->LinkTo(rhs);
+    return rhs;
+  }
+  GstppPad& operator / (GstppPad& rhs) {
+    this->UnlinkTo(rhs);
     return rhs;
   }
 

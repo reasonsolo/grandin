@@ -59,6 +59,10 @@ bool GstppElement::SetState(ElementState state) {
   return false;
 }
 
+bool GstppElement::SyncStateWithParent() {
+  return gst_element_sync_state_with_parent(element());
+}
+
 std::ostream& operator<<(std::ostream& os, GstppElement& elem) {
   os << "(" << elem.type() << ":" << elem.name() << ")";
   return os;

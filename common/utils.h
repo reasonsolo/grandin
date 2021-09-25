@@ -10,6 +10,7 @@
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <cstdint>
@@ -27,6 +28,27 @@
 #define gettid() syscall(SYS_gettid)
 
 namespace grd {
+
+class SysUtils {
+ public:
+  static bool MkDirP(const std::string& dir) {
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp), "%s", dir.c_str());
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/') tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+      if (*p == '/') {
+        *p = 0;
+        mkdir(tmp, S_IRWXU);
+        *p = '/';
+      }
+    mkdir(tmp, S_IRWXU);
+    return true;
+  }
+};
 
 class INetUtils {
  public:

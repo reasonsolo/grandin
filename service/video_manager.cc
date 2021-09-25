@@ -110,9 +110,9 @@ void VideoManager::ProcessDelVideoReq(WFHttpTask* t, HttpRequestInfo* req_info) 
 /* static */
 VideoInput* VideoManager::CreateVideoInput(QueryMap& qmap) {
   auto video_input = new VideoInput;
-  video_input->uid = UniqueIdUtils::GenUniqueId();
-  video_input->uri = qmap[kUri];
   video_input->user = qmap[kUser];
+  video_input->uid = fmt::format("{}/{}", video_input->user, UniqueIdUtils::GenUniqueId());
+  video_input->uri = qmap[kUri];
   return video_input;
 }
 

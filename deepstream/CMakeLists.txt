@@ -1,4 +1,4 @@
-add_library(testapp testapp.cc)
+add_library(testapp testapp.cc dynamic_sink.cc)
 target_link_libraries(testapp PUBLIC gstpp gstpp_ui
 gflags glog ${NVDS_LIBS} -Wl,-rpath,${NVDS_LIB_DIR})
 

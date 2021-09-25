@@ -85,9 +85,19 @@ bool GstppPad::LinkTo(GstppPad& downstream) {
   if (gst_pad_link(pad_, downstream.pad_) == GST_PAD_LINK_OK) {
     LOG(INFO) << "link " << *this << " to " << downstream;
     return true;
-  } 
-   LOG(ERROR)  << "cannot link " << *this << " --> " << downstream;
-   return false;
+  }
+  LOG(ERROR) << "cannot link " << *this << " --> " << downstream;
+  return false;
+}
+
+bool GstppPad::UnlinkTo(GstppPad& downstream) {
+  if (gst_pad_unlink(pad_, downstream.pad_)) {
+    LOG(INFO) << "unlink " << *this << " to " << downstream;
+    return true;
+  }
+  LOG(ERROR) << "cannot unlink " << *this << " --> " << downstream;
+  return false;
+
 }
 
 std::ostream& operator<<(std::ostream& os, GstppPad& pad) {
